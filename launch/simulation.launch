@@ -52,10 +52,12 @@
   <!-- Fake face detector -->
   <node pkg="vizzy_playground" type="fake_face_detector.py" name="fake_face_detector"/>
 
-  
+
   <!-- Approach group noder -->
     <!-- <node pkg="approach_group" type="approach_group.py" name="approach_group"/>-->
 
+
+  <node type="rviz" name="rviz_view" pkg="rviz" args="-d $(find approach_group)/rviz/config.rviz" />
 
 
   <!-- Fake speech server -->
