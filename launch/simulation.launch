@@ -49,9 +49,13 @@
     <arg name="rviz" value="$(arg rviz)"/>
     <arg name="gui" value="$(arg gazebo_gui)"/>
   </include>
+  <!-- Fake face detector -->
+  <node pkg="vizzy_playground" type="fake_face_detector.py" name="fake_face_detector"/>
 
+  
   <!-- Approach group noder -->
-  <node pkg="approach_group" type="approach_group.py" name="approach_group"/>
+    <!-- <node pkg="approach_group" type="approach_group.py" name="approach_group"/>-->
+
 
 
   <!-- Fake speech server -->
