@@ -5,7 +5,19 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Pose, PoseArray
 
+import math
+
 import tf
+def rotate(px, py, angle):
+    """
+    Rotate a point counterclockwise by a given angle around a given origin.
+
+    The angle should be given in radians.
+    """
+
+    qx = math.cos(angle) * px - math.sin(angle) * py
+    qy = math.sin(angle) * px + math.cos(angle) * py
+    return qx, qy
 
 
 def callback(data):
@@ -20,10 +32,12 @@ def callback(data):
         group.append(pose_person)
 
 
-        goal_pose = [-2.05, 1.42, 2.53] #in base_footprint frame
+        goal_pose = [-2, 0.8, -0.5] #in base_footprint frame
         goal_quaternion = tf.transformations.quaternion_from_euler(0,0,goal_pose[2])
 
         # Pose base_footprint frame ---- map frame
+        goal_pose[0], goal_pose[1] = rotate(goal_pose[0], goal_pose[1], math.pi)
+        #goal_pose [2] = goal_pose[2] + math.pi
 
     try:
         rospy.loginfo("Approaching group!")
@@ -64,7 +78,7 @@ if __name__ == '__main__':
     #     (trans,rot) = listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
     #     print("entrei")
     # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-    #     print("erro")
+    #     pass
 
     rospy.Subscriber("/faces",PoseArray,callback )
     rospy.spin()
