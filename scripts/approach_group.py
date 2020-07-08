@@ -5,6 +5,8 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Pose, PoseArray
 
+from matplotlib import pyplot as plt
+
 import math
 
 import tf
@@ -20,7 +22,17 @@ def rotate(px, py, angle):
     return qx, qy
 
 
-def callback(data):
+def callback(data, args):
+    trans = args[0]
+    rot = args[1]
+
+    
+    (roll_tf, pitch_tf, yaw_tf) = tf.transformations.euler_from_quaternion(rot)
+    rospy.loginfo(roll_tf)
+    rospy.loginfo(pitch_tf)
+    rospy.loginfo(yaw_tf)
+    rospy.loginfo(trans)
+
     group = []
     for pose in data.poses:
         rospy.loginfo("Person Detected")
@@ -30,14 +42,15 @@ def callback(data):
 
         pose_person = [pose.position.x, pose.position.y, yaw]
         group.append(pose_person)
-
+        rospy.loginfo(group)
 
         goal_pose = [-2, 0.8, -0.5] #in base_footprint frame
         goal_quaternion = tf.transformations.quaternion_from_euler(0,0,goal_pose[2])
 
         # Pose base_footprint frame ---- map frame
         goal_pose[0], goal_pose[1] = rotate(goal_pose[0], goal_pose[1], math.pi)
-        #goal_pose [2] = goal_pose[2] + math.pi
+        
+        
 
     try:
         rospy.loginfo("Approaching group!")
@@ -72,13 +85,15 @@ def movebase_client(goal_pose, goal_quaternion):
 
 if __name__ == '__main__':
     rospy.init_node("approach_group")
-    # listener = tf.TransformListener()
-    # rate = rospy.Rate(10.0)
-    # try:
-    #     (trans,rot) = listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
-    #     print("entrei")
-    # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-    #     pass
+    listener = tf.TransformListener()
+    rate = rospy.Rate(10.0)
 
-    rospy.Subscriber("/faces",PoseArray,callback )
+    while not rospy.is_shutdown():
+        try:
+            (trans,rot) = listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+            break
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            continue
+    
+    rospy.Subscriber("/faces",PoseArray,callback, (trans, rot))
     rospy.spin()
