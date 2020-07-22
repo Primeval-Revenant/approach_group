@@ -576,7 +576,7 @@ Visualization Manager:
       Color: 25; 255; 0
       Enabled: true
       Name: Polygon
-      Topic: /costmap_node/costmap/footprint
+      Topic: /move_base_flex/local_costmap/footprint
       Unreliable: false
       Value: true
   Enabled: true
@@ -611,7 +611,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 12.3933477
+      Distance: 9.59740829
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -626,10 +626,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.420397818
+      Pitch: 0.995397568
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.6954093
+      Yaw: 5.5404129
     Saved: ~
 Window Geometry:
   ClickableGazeDisplay:
@@ -650,4 +650,4 @@ Window Geometry:
     collapsed: true
   Width: 1371
   X: 324
-  Y: 68
+  Y: 39
