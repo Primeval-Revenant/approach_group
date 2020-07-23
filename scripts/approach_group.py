@@ -37,12 +37,6 @@ def movebase_client(goal_pose, goal_quaternion):
     goal.target_pose.header.stamp = rospy.Time.now()
     goal.target_pose.pose.position = goal_pose
     goal.target_pose.pose.orientation = goal_quaternion
-    # goal.target_pose.pose.position.x = goal_pose[0]
-    # goal.target_pose.pose.position.y = goal_pose[1]
-    # goal.target_pose.pose.orientation.x = goal_quaternion[0]
-    # goal.target_pose.pose.orientation.y = goal_quaternion[1]
-    # goal.target_pose.pose.orientation.z = goal_quaternion[2]
-    # goal.target_pose.pose.orientation.w = goal_quaternion[3]
 
     client.send_goal(goal)
     wait = client.wait_for_result()
