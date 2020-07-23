@@ -11,14 +11,30 @@ import math
 
 import tf
 
+def euclidean_distance(x1, y1, x2, y2):
+    """Euclidean distance between two points in 2D."""
+    dist = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    return dist
 
-def callback(data):
-
-    #for pose in data.poses:
-    #calcular pose mais perto do robot
+def callback(data, args):
+    pos = args[0]
+    ori = args[1]
+    
+    dis = 0
+    for idx,pose in enumerate(data.poses):
         
-    goal_pose = data.poses[1].position
-    goal_quaternion = data.poses[1].orientation
+        dis_aux = euclidean_distance(pos[0],pos[1],pose.position.x, pose.position.y)
+        
+        if idx == 0:
+            goal_pose = pose.position
+            goal_quaternion = pose.orientation
+            dis = dis_aux
+        elif dis > dis_aux:
+            goal_pose = pose.position
+            goal_quaternion = pose.orientation
+            dis = dis_aux
+
+    #calcular pose mais perto do robot
     try:
         rospy.loginfo("Approaching group!")
         result = movebase_client(goal_pose, goal_quaternion)
@@ -51,6 +67,14 @@ if __name__ == '__main__':
     listener = tf.TransformListener()
     rate = rospy.Rate(10.0)
 
+    while not rospy.is_shutdown():
+        try:
+            (pos,ori) = listener.lookupTransform('/map', '/odom', rospy.Time(0))
+            break
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            continue
+    
+    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(ori)
 
-    rospy.Subscriber("/approaching_poses",PoseArray,callback)
+    rospy.Subscriber("/approaching_poses",PoseArray,callback, (pos,yaw))
     rospy.spin()
