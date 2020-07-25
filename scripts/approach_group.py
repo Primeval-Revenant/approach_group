@@ -19,6 +19,8 @@ def euclidean_distance(x1, y1, x2, y2):
 def callback(data, args):
     pos = args[0]
     ori = args[1]
+
+    
     
     dis = 0
     for idx,pose in enumerate(data.poses):
@@ -67,9 +69,10 @@ if __name__ == '__main__':
     listener = tf.TransformListener()
     rate = rospy.Rate(10.0)
 
+    #ver pose e verificar se coincide com robot
     while not rospy.is_shutdown():
         try:
-            (pos,ori) = listener.lookupTransform('/map', '/odom', rospy.Time(0))
+            (pos,ori) = listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
             break
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
