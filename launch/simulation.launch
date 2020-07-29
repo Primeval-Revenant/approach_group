@@ -50,7 +50,7 @@
     <arg name="gui" value="$(arg gazebo_gui)"/>
   </include>
   <!-- Fake face detector -->
-  <node pkg="vizzy_playground" type="fake_face_detector.py" name="fake_face_detector"/>
+  <node pkg="approach_group" type="fake_face_detector.py" name="fake_face_detector"/>
 
 
   <!-- Approach group noder -->
