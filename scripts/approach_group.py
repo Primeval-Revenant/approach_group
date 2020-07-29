@@ -18,25 +18,50 @@ def euclidean_distance(x1, y1, x2, y2):
     """Euclidean distance between two points in 2D."""
     dist = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     return dist
-
-def approach_group(data,pos, ori):
-   
+def rotate(px, py, angle):
+    """
+    Rotate a point counterclockwise by a given angle around a given origin.
+    The angle should be given in radians.
+    """
+    qx = math.cos(angle) * px - math.sin(angle) * py
+    qy = math.sin(angle) * px + math.cos(angle) * py
+    return qx, qy
+def approach_group(data ,pos, ori):
+    listener = tf.TransformListener()
     group = []
     if not data.poses:
         group = []
     else:
-        for pose in data.poses:
+        while not rospy.is_shutdown():
+            try:
+                (trans,rot) = listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+                break
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                continue
 
+        tx = trans[0]
+        ty = trans[1]
+        t_quarterion = rot
+        (t_roll, t_pitch, t_yaw) = tf.transformations.euler_from_quaternion(t_quarterion)
+
+        for pose in data.poses:
             rospy.loginfo("Person Detected")
-            
+
             quartenion = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
             (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(quartenion)
 
-            pose_person = [pose.position.x, pose.position.y,yaw]
-            
+            (px, py) = rotate(pose.position.x, pose.position.y, t_yaw)
+            pose_x = px + tx
+            pose_y = py + ty
+            pose_yaw = yaw + t_yaw
+
+
+
+            pose_person = [pose_x, pose_y,pose_yaw]
+
 
             group.append(pose_person)
-    
+
     if group:
         aux_group = copy.deepcopy(group)
         groups = [aux_group]
@@ -45,17 +70,18 @@ def approach_group(data,pos, ori):
                 p[0] = p[0] * 100 #algorithm uses cm
                 p[1] = p[1] * 100 # m to cm
 
-        
+
 
         app = SpaceModeling(groups)
         pparams,gparams, approaching_poses= app.solve()
-    
-    
+
+
         dis = 0
         for idx,pose in enumerate(approaching_poses):
-            
-            dis_aux = euclidean_distance(pos[0],pos[1],pose[0], pose[1])
-            
+
+            # Approaching poses are in meteres divide by 100  m - cm
+            dis_aux = euclidean_distance(pos[0],pos[1],pose[0]/100, pose[1]/100 )
+
             if idx == 0:
                 goal_pose = pose[0:2]
                 goal_quaternion = tf.transformations.quaternion_from_euler(0,0,pose[2])
@@ -65,8 +91,6 @@ def approach_group(data,pos, ori):
                 goal_quaternion = tf.transformations.quaternion_from_euler(0,0,pose[2])
                 dis = dis_aux
 
-
-        #calcular pose mais perto do robot
         try:
             rospy.loginfo("Approaching group!")
             result = movebase_client(goal_pose, goal_quaternion)
@@ -111,11 +135,10 @@ if __name__ == '__main__':
             break
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
-    
+
     (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(ori)
 
     #rospy.Subscriber("/approaching_poses",PoseArray,callback, (pos,yaw))
     data = rospy.wait_for_message('/faces', PoseArray)
 
     approach_group(data,pos,yaw)
-    
