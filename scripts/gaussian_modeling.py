@@ -285,11 +285,16 @@ def estimate_gaussians(persons, group_data, idx, ellipse_param, back_param, grou
     #plt.show()
     plt.close('all')
 
-
+    
     approaching_poses = []
     for l, value in enumerate(center_x):
         approaching_poses.append(
             (center_x[l], center_y[l], orientation[l]))
 
     map_limits = [xmin, xmax, ymin, ymax]
-    return approaching_poses, Z, map_limits
+
+
+    len_areas = []
+    for zone in approaching_zones:
+        len_areas.append(len(zone))
+    return approaching_poses, Z, map_limits, len_areas

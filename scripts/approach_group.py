@@ -73,24 +73,35 @@ def approach_group(data ,pos, ori):
 
 
         app = SpaceModeling(groups)
-        pparams,gparams, approaching_poses= app.solve()
+        pparams,gparams, approaching_poses, len_areas = app.solve()
 
 
-        dis = 0
-        for idx,pose in enumerate(approaching_poses):
+       
 
-            # Approaching poses are in meteres divide by 100  m - cm
-            dis_aux = euclidean_distance(pos[0],pos[1],pose[0]/100, pose[1]/100 )
 
-            if idx == 0:
-                goal_pose = pose[0:2]
-                goal_quaternion = tf.transformations.quaternion_from_euler(0,0,pose[2])
-                dis = dis_aux
-            elif dis > dis_aux:
-                goal_pose = pose[0:2]
-                goal_quaternion = tf.transformations.quaternion_from_euler(0,0,pose[2])
-                dis = dis_aux
 
+    # # Choose the nearest pose
+    #     dis = 0
+    #     for idx,pose in enumerate(approaching_poses):
+
+    #         # Approaching poses are in meteres divide by 100  m - cm
+    #         dis_aux = euclidean_distance(pos[0],pos[1],pose[0]/100, pose[1]/100 )
+
+    #         if idx == 0:
+    #             goal_pose = pose[0:2]
+    #             goal_quaternion = tf.transformations.quaternion_from_euler(0,0,pose[2])
+    #             dis = dis_aux
+    #         elif dis > dis_aux:
+    #             goal_pose = pose[0:2]
+    #             goal_quaternion = tf.transformations.quaternion_from_euler(0,0,pose[2])
+    #             dis = dis_aux
+
+    #Choose the pose in the biggest approaching area 
+
+        idx = len_areas.index(max(len_areas))
+        goal_pose = approaching_poses[idx][0:2]
+        goal_quaternion = tf.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
+    
         try:
             rospy.loginfo("Approaching group!")
             result = movebase_client(goal_pose, goal_quaternion)
@@ -103,7 +114,7 @@ def movebase_client(goal_pose, goal_quaternion):
 
     client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
     client.wait_for_server()
-
+    
 
     goal = MoveBaseGoal()
     goal.target_pose.header.frame_id = "map"
