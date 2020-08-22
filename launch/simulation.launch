@@ -65,4 +65,6 @@
     name="gcloud_tts" output="screen">
   </node>
 
+  <node pkg="adaptive_social_layers" type="people_publisher.py" name="people_publisher"/>
+
 </launch>
