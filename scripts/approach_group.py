@@ -56,9 +56,7 @@ def approach_group(data ,pos, ori):
             pose_yaw = yaw + t_yaw
 
 
-
             pose_person = [pose_x, pose_y,pose_yaw]
-
 
             group.append(pose_person)
 
@@ -101,7 +99,7 @@ def approach_group(data ,pos, ori):
         idx = len_areas.index(max(len_areas))
         goal_pose = approaching_poses[idx][0:2]
         goal_quaternion = tf.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
-    
+        print(goal_pose)
         try:
             rospy.loginfo("Approaching group!")
             result = movebase_client(goal_pose, goal_quaternion)
