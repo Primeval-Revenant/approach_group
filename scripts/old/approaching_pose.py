@@ -25,27 +25,38 @@ def get_angle(pos1, pos2):
     return math.atan2(pos1[1] - pos2[1], pos1[0] - pos2[0])
 
 
-def approaching_area_filtering(approaching_area, costmap):
+def euclidean_distance(x1, y1, x2, y2):
+    """Euclidean distance between two points in 2D."""
+    dist = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    return dist
+
+
+def approachingfiltering_ellipses(personal_space, approaching_filter, idx):
+    """Filters the approaching area."""
+    # Approaching Area filtering - remove points tha are inside the personal space of a person
+    if idx == 1:
+        approaching_filter = [(x, y) for x, y in zip(
+            approaching_filter[0], approaching_filter[1]) if not personal_space.contains_point([x, y])]
+    else:
+        cx = [j[0] for j in approaching_filter]
+        cy = [k[1] for k in approaching_filter]
+        approaching_filter = [(x, y) for x, y in zip(
+            cx, cy) if not personal_space.contains_point([x, y])]
+    return approaching_filter
+
+
+def approaching_area_filtering(approaching_area, contour_points):
     """ Filters the approaching area by checking the points inside personal or group space."""
 
-
+    polygon = Polygon(contour_points)
 
     approaching_filter = []
     approaching_zones = []
     aux_list = []
 
     cnt = 0
-    ox = costmap.info.origin.position.x
-    oy = costmap.info.origin.position.y 
-    resolution = costmap.info.resolution
     for x, y in zip(approaching_area[0], approaching_area[1]):
-        
-        ix = int((x - (resolution/2) - ox) / resolution)
-        iy = int((y - (resolution/2) - oy) / resolution)
-        index = iy * costmap.info.width + ix
-
-        # Comecar por considerar que so celulas com custo zero sao acessiveis, depois mudar isto para considerar outros valores
-        if costmap.data[index] == 0: # substituir por condicao de custo 
+        if not polygon.contains(Point([x, y])):
             cnt += 1
         else:
             break
@@ -67,11 +78,7 @@ def approaching_area_filtering(approaching_area, costmap):
         y_area = approaching_area[1]
 
     for x, y in zip(x_area, y_area):
-        ix = int((x - (resolution/2) - ox) / resolution)
-        iy = int((y - (resolution/2) - oy) / resolution)
-        index = iy * costmap.info.width + ix
-
-        if costmap.data[index] == 0:
+        if not polygon.contains(Point([x, y])):
             approaching_filter.append((x, y))
             aux_list.append((x, y))
 
@@ -85,7 +92,7 @@ def approaching_area_filtering(approaching_area, costmap):
     return approaching_filter, approaching_zones
 
 
-def approaching_heuristic(group_radius, pspace_radius, group_pos, approaching_filter, costmap, approaching_zones):
+def approaching_heuristic(group_radius, pspace_radius, group_pos, approaching_filter, contour_points, approaching_zones):
     """ """
 
     approaching_radius = group_radius
@@ -100,7 +107,7 @@ def approaching_heuristic(group_radius, pspace_radius, group_pos, approaching_fi
             approaching_area = plot_ellipse(
                 semimaj=approaching_radius, semimin=approaching_radius, x_cent=group_pos[0], y_cent=group_pos[1], data_out=True)
             approaching_filter, approaching_zones = approaching_area_filtering(
-                approaching_area, costmap)
+                approaching_area, contour_points)
 
             approaching_radius += R_STEP
 
@@ -126,3 +133,26 @@ def zones_center(approaching_zones, group_pos, group_radius):
     return center_x, center_y, orientation
 
 
+def approaching_pose(robot_pose, approaching_area, group_center):
+    """Chooses the nearest center point to the robot from the multiple approaching area."""
+    min_dis = 0
+    for i, item in enumerate(approaching_area):
+        if i == 0:
+            min_dis = euclidean_distance(
+                robot_pose[0], robot_pose[1], approaching_area[i][0], approaching_area[i][1])
+            min_idx = 0
+        else:
+            dis = euclidean_distance(
+                robot_pose[0], robot_pose[1], approaching_area[i][0], approaching_area[i][1])
+
+            if dis < min_dis:
+                min_dis = dis
+                min_idx = i
+    goal_x = approaching_area[min_idx][0]
+    goal_y = approaching_area[min_idx][1]
+    orientation = math.atan2(
+        group_center[1] - goal_y, group_center[0] - goal_x)
+
+    goal_pose = [goal_x, goal_y, orientation]
+
+    return goal_pose
