@@ -6,7 +6,7 @@ import actionlib
 import math
 
 from nav_msgs.msg import OccupancyGrid
-from group_msgs.msg import People
+from group_msgs.msg import People, Groups
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Pose, PoseArray
 from ellipse import plot_ellipse
@@ -65,63 +65,50 @@ class ApproachingPose():
         """
         rospy.init_node('ApproachPose', anonymous=True)
         rospy.Subscriber("/move_base_flex/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
-        rospy.Subscriber("/people",People , self.callbackPe, queue_size=1)
+        rospy.Subscriber("/groups",Groups , self.callbackGr, queue_size=1)
         self.loop_rate = rospy.Rate(rospy.get_param('~loop_rate', 10.0))
 
         self.costmap_received = False
         self.people_received = False
         self.groups = []
 
+    def callbackGr(self,data):
+        self.people_received = True
+        self.groups = []
+     
+        listener = tf.TransformListener()
 
+        while not rospy.is_shutdown():
+            try:
+                (trans,rot) = listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+                break
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                continue
+
+        tx = trans[0]
+        ty = trans[1]
+        (_, _, t_yaw) = tf.transformations.euler_from_quaternion(rot)
+
+        for group in data.groups:
+            tmp_group = []
+            if len(group.people) > 1: # Only store groups, ignore individuals
+                for people in group.people:
+                    (px, py) = rotate(people.position.x, people.position.y, t_yaw)
+                    pose_x = px + tx
+                    pose_y = py + ty
+                    pose_yaw = people.orientation + t_yaw
+
+                    if people.ospace:
+                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy] })
+                    else:
+                        tmp_group.append([pose_x, pose_y, pose_yaw])
+
+             
     def callbackCm(self, data):
         """
         """
         self.costmap = data
         self.costmap_received = True
-
-
-    def callbackPe(self, data):
-        """
-        """
-        self.people = data
-        self.people_received = True
-        self.groups = []
-
-        # Devia estar a receber os grupos diretamente!!!!!!!! Corrigir-> Assumir por equanto que apenas estou a receber um grupo
-
-        listener = tf.TransformListener()
-
-        if not self.people.people:
-            group = []
-            
-        else:
-            while not rospy.is_shutdown():
-                try:
-                    (trans,rot) = listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
-                    break
-                except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                    continue
-
-            tx = trans[0]
-            ty = trans[1]
-            (t_roll, t_pitch, t_yaw) = tf.transformations.euler_from_quaternion(rot)
-            
-            group = []
-            for pose in self.people.people:
-
-                (px, py) = rotate(pose.position.x, pose.position.y, t_yaw)
-                pose_x = px + tx
-                pose_y = py + ty
-                pose_yaw = pose.orientation + t_yaw
-   
-                if pose.ospace:
-                    self.groups.append({'members': group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[pose.sx, pose.sy] })
-                    group = []
-
-                else:
-                    group.append([pose_x, pose_y,pose_yaw])
-    
-
 
            
     def run_behavior(self):
@@ -130,15 +117,13 @@ class ApproachingPose():
         while not rospy.is_shutdown():
             if self.people_received and self.groups:
                 self.people_received = False
-
-                if self.costmap_received:
+                
+                if self.costmap_received and self.groups:
                     self.costmap_received = False
 
-                    # calcula zonas de aproximacao para cada grupo como faziamos no gaussian_modeling e approaching_pose
-                    #1st filtragem da area de aproximacao vendo no costmap os pontos que nao estejam livres
 
                     # Estou a assumir que apenas esta a trabalhar com um grupo ainda
-                    print(self.groups[0])
+                    
                     group = self.groups[0]
                     approaching_area = plot_ellipse(semimaj=group["parameters"][0], semimin=group["parameters"][1], x_cent=group["pose"][0],y_cent=group["pose"][1], data_out=True)
 
@@ -181,7 +166,7 @@ class ApproachingPose():
                         result = movebase_client(goal_pose, goal_quaternion)
                         if result:
                             rospy.loginfo("Goal execution done!")
-                            breakr
+                            break
                     except rospy.ROSInterruptException:
                         rospy.loginfo("Navigation test finished.")
                     
