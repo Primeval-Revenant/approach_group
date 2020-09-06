@@ -29,6 +29,11 @@ def rotate(px, py, angle):
 
     return qx, qy
 
+def euclidean_distance(x1, y1, x2, y2):
+    """Euclidean distance between two points in 2D."""
+    dist = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    return dist
+
 
 def movebase_client(goal_pose, goal_quaternion):
     """
@@ -71,6 +76,7 @@ class ApproachingPose():
         self.costmap_received = False
         self.people_received = False
         self.groups = []
+        self. pose = []
 
     def callbackGr(self,data):
         self.people_received = True
@@ -88,6 +94,7 @@ class ApproachingPose():
         tx = trans[0]
         ty = trans[1]
         (_, _, t_yaw) = tf.transformations.euler_from_quaternion(rot)
+        self.pose = [tx, ty, t_yaw]
 
         for group in data.groups:
             tmp_group = []
@@ -121,16 +128,27 @@ class ApproachingPose():
                 if self.costmap_received and self.groups:
                     self.costmap_received = False
 
+                    # # Choose the nearest pose
+                    dis = 0
+                    for idx,group in enumerate(self.groups):
 
-                    # Estou a assumir que apenas esta a trabalhar com um grupo ainda
+                    # Choose the nearest group
+                        dis_aux = euclidean_distance(group["pose"][0],group["pose"][1],self.pose[0], self.pose[1] )
+
+                        if idx == 0:
+                            goal_group = group
+                            dis = dis_aux
+                        elif dis > dis_aux:
+                            goal_group = group
+                            dis = dis_aux
+
+
+                    # Choose the nearest group
                     
-                    group = self.groups[0]
+                    group = goal_group
                     approaching_area = plot_ellipse(semimaj=group["parameters"][0], semimin=group["parameters"][1], x_cent=group["pose"][0],y_cent=group["pose"][1], data_out=True)
 
-                    ################################# Adaptar ao meu caso
 
-                    # Substituir os niveis pelo costmap e depois verificar se estao livres ou nao 
-                    # Approaching Area filtering - remove points that are inside the personal space of a person
                     approaching_filter, approaching_zones = approaching_area_filtering(approaching_area, self.costmap)
 
                     approaching_filter, approaching_zones = approaching_heuristic(group["parameters"][0], group["parameters"][0] + HUMAN_X / 2 , group["pose"], approaching_filter, self.costmap, approaching_zones)
@@ -141,7 +159,7 @@ class ApproachingPose():
                         approaching_zones, group["pose"], group["parameters"][0])
 
                     approaching_poses = []
-                    for l, value in enumerate(center_x):
+                    for l, _ in enumerate(center_x):
                         approaching_poses.append(
                             (center_x[l], center_y[l], orientation[l]))
 
@@ -149,13 +167,7 @@ class ApproachingPose():
                     for zone in approaching_zones:
                         len_areas.append(len(zone))
 
-
-# Calculo das poses de aproximacao fazer aqui como tinha feito no gaussian modeling, mas agora uso a informacao que o costmao me da para saber se a zona esta free
-# ou nao. ver o treshold da inflation porque certos valores o robot consegue navegar na inflation e esses pontos devem ser considerados.
-# Se zona for vazia ir aumentando raio ocmo tinha feito antes
-
-# Ver qual o grupo mais proxima e depois disso escolher a zona maior do grupo
-                        #Choose the pose in the biggest approaching area 
+                    # Choose the pose in the biggest approaching area 
 
                     idx = len_areas.index(max(len_areas))
                     goal_pose = approaching_poses[idx][0:2]
