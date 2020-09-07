@@ -30,6 +30,7 @@ def rotate(px, py, angle):
 
     return qx, qy
 
+
 def euclidean_distance(x1, y1, x2, y2):
     """Euclidean distance between two points in 2D."""
     dist = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
@@ -62,6 +63,7 @@ def movebase_client(goal_pose, goal_quaternion):
     else:
         return client.get_result()
 
+
 def group_radius(persons, group_pose):
     """Computes the radius of a group."""
     group_radius = 0  # average of the distance of the group members to the center -> initial approaching radius
@@ -93,6 +95,7 @@ def group_radius(persons, group_pose):
     ospace_radius -= HUMAN_X / 2
     group_radius = sum_radius / len(persons)
     return group_radius, pspace_radius, ospace_radius
+
 
 class ApproachingPose():
     """
@@ -244,9 +247,10 @@ class ApproachingPose():
                                 break
                         except rospy.ROSInterruptException:
                             rospy.loginfo("Navigation test finished.")
+
                     else:
                         rospy.loginfo("Impossible to approach group.") 
-                        break                       
+                      
 
 
 

@@ -19,6 +19,10 @@ import numpy as np
 # Appeoachinf area radius increment in m
 R_STEP = 0.01
 
+# Thresold
+THRESHOLD = 127
+        # 127 -> cost -> definitely not in collision
+        # http://wiki.ros.org/costmap_2d/hydro/inflation
 
 def get_angle(pos1, pos2):
     "Angle between two points"
@@ -42,9 +46,8 @@ def approaching_area_filtering(approaching_area, costmap):
         iy = int((y - (resolution/2) - oy) / resolution)
         index = iy * costmap.info.width + ix
 
-        # 127 -> cost -> definitely not in collision
-        # http://wiki.ros.org/costmap_2d/hydro/inflation
-        if costmap.data[index] <= 127: 
+
+        if costmap.data[index] <= THRESHOLD: 
             cnt += 1
         else:
             break
