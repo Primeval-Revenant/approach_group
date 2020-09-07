@@ -44,8 +44,9 @@ def approaching_area_filtering(approaching_area, costmap):
         iy = int((y - (resolution/2) - oy) / resolution)
         index = iy * costmap.info.width + ix
 
-        # Comecar por considerar que so celulas com custo zero sao acessiveis, depois mudar isto para considerar outros valores
-        if costmap.data[index] == 0: # substituir por condicao de custo 
+        # 127 -> cost -> definitely not in collision
+        # http://wiki.ros.org/costmap_2d/hydro/inflation
+        if costmap.data[index] <= 127: 
             cnt += 1
         else:
             break

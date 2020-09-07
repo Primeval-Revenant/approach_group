@@ -10,13 +10,14 @@ from group_msgs.msg import People, Groups
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Pose, PoseArray
 from ellipse import plot_ellipse
+import matplotlib.pyplot as plt
 
 from approaching_pose import approaching_area_filtering, approaching_heuristic, zones_center
-
+from plot_approach import plot_group, plot_person, draw_arrow
 # CONSTANTS
 # Human Body Dimensions top view in cm
-HUMAN_Y = 45
-HUMAN_X = 20
+HUMAN_Y = 0.45
+HUMAN_X = 0.20
 
 
 def rotate(px, py, angle):
@@ -61,6 +62,37 @@ def movebase_client(goal_pose, goal_quaternion):
     else:
         return client.get_result()
 
+def group_radius(persons, group_pose):
+    """Computes the radius of a group."""
+    group_radius = 0  # average of the distance of the group members to the center
+    pspace_radius = 0  # Based on the closest person to the group center
+    ospace_radius = 0  # Based on the farthest persons to the group center
+
+    sum_radius = 0
+    for person in persons:
+        # average of the distance between the group members and the center of the group, o-space radius
+        distance = euclidean_distance(person[0],
+                                      person[1], group_pose[0], group_pose[1])
+        sum_radius += distance
+
+        if ospace_radius == 0:
+            ospace_radius = distance
+        else:
+            ospace_aux = distance
+            if ospace_aux < ospace_radius:
+                ospace_radius = ospace_aux
+
+        if pspace_radius == 0:
+            pspace_radius = distance
+        else:
+            pspace_aux = distance
+            if pspace_aux > pspace_radius:
+                pspace_radius = pspace_aux
+
+    pspace_radius += HUMAN_X / 2
+    ospace_radius -= HUMAN_X / 2
+    group_radius = sum_radius / len(persons)
+    return group_radius, pspace_radius, ospace_radius
 
 class ApproachingPose():
     """
@@ -79,6 +111,7 @@ class ApproachingPose():
         self. pose = []
 
     def callbackGr(self,data):
+        """ Groups data callback. """
         self.people_received = True
         self.groups = []
      
@@ -112,8 +145,7 @@ class ApproachingPose():
 
              
     def callbackCm(self, data):
-        """
-        """
+        """ Costmap Callback. """
         self.costmap = data
         self.costmap_received = True
 
@@ -142,16 +174,16 @@ class ApproachingPose():
                             goal_group = group
                             dis = dis_aux
 
+                    # Meter algures uma condicap que verifica que se nao for possivel aproximar o grupo escolher outro
 
                     # Choose the nearest group
                     
                     group = goal_group
+                    g_radius, pspace_radius, ospace_radius = group_radius(group["members"], group["pose"])
+
                     approaching_area = plot_ellipse(semimaj=group["parameters"][0], semimin=group["parameters"][1], x_cent=group["pose"][0],y_cent=group["pose"][1], data_out=True)
-
-
                     approaching_filter, approaching_zones = approaching_area_filtering(approaching_area, self.costmap)
-
-                    approaching_filter, approaching_zones = approaching_heuristic(group["parameters"][0], group["parameters"][0] + HUMAN_X / 2 , group["pose"], approaching_filter, self.costmap, approaching_zones)
+                    approaching_filter, approaching_zones = approaching_heuristic(group["parameters"][0], pspace_radius , group["pose"], approaching_filter, self.costmap, approaching_zones)
 
 
             
@@ -173,14 +205,31 @@ class ApproachingPose():
                     goal_pose = approaching_poses[idx][0:2]
                     goal_quaternion = tf.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
                     
-                    try:
-                        rospy.loginfo("Approaching group!")
-                        result = movebase_client(goal_pose, goal_quaternion)
-                        if result:
-                            rospy.loginfo("Goal execution done!")
-                            break
-                    except rospy.ROSInterruptException:
-                        rospy.loginfo("Navigation test finished.")
+
+                    fig = plt.figure()
+                    ax = fig.add_subplot(1, 1, 1)
+                    plot_kwargs = {'color': 'g', 'linestyle': '-', 'linewidth': 0.8}
+                    for person in group["members"]:
+                        plot_person(person[0], person[1], person[2], ax, plot_kwargs)
+
+                    _ = plot_group(group["pose"], group["parameters"][0], pspace_radius, ospace_radius, ax)
+                    for i, angle in enumerate(orientation):
+                        draw_arrow(center_x[i], center_y[i], angle, ax)
+                    x_approach = [j[0] for j in approaching_filter]
+                    y_approach = [k[1] for k in approaching_filter]
+                    ax.plot(x_approach, y_approach, 'c.', markersize=5)
+                    ax.plot(center_x, center_y, 'r.', markersize=5)
+                    ax.set_aspect(aspect=1)
+                    #fig.tight_layout()
+                    plt.show()
+                    # try:
+                    #     rospy.loginfo("Approaching group!")
+                    #     result = movebase_client(goal_pose, goal_quaternion)
+                    #     if result:
+                    #         rospy.loginfo("Goal execution done!")
+                    #         break
+                    # except rospy.ROSInterruptException:
+                    #     rospy.loginfo("Navigation test finished.")
                     
 
 
