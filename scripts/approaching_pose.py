@@ -16,8 +16,8 @@ from ellipse import plot_ellipse
 
 import numpy as np
 
-# Radius increment in cm
-R_STEP = 1
+# Appeoachinf area radius increment in m
+R_STEP = 0.01
 
 
 def get_angle(pos1, pos2):
@@ -27,8 +27,6 @@ def get_angle(pos1, pos2):
 
 def approaching_area_filtering(approaching_area, costmap):
     """ Filters the approaching area by checking the points inside personal or group space."""
-
-
 
     approaching_filter = []
     approaching_zones = []

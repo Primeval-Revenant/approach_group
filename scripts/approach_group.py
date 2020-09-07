@@ -139,12 +139,14 @@ class ApproachingPose():
                     pose_yaw = people.orientation + t_yaw
 
                     
-                    # !!!!!!!!!!!!!!Fazer o calculo das coisas do grupo aqui e adicionar ao dicionario !!!!
+  
                     if people.ospace:
-                        # group_radius = 0  # average of the distance of the group members to the center
-                        # pspace_radius = 0  # Based on the closest person to the group center
-                        # ospace_radius = 0  # Based on the farthest persons to the group center
-                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy] })
+                        # group_radius average of the distance of the group members to the center
+                        # pspace_radius  Based on the closest person to the group center
+                        # ospace_radius Based on the farthest persons to the group center
+                        g_radius, pspace_radius, ospace_radius = group_radius(tmp_group, [pose_x, pose_y,pose_yaw])
+
+                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parametetrs' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius})
                     else:
                         tmp_group.append([pose_x, pose_y, pose_yaw])
 
@@ -184,9 +186,9 @@ class ApproachingPose():
                     # Choose the nearest group
                     
                     group = goal_group
-                    ###########################3
-                    g_radius, pspace_radius, ospace_radius = group_radius(group["members"], group["pose"])
-##########################################################
+                    g_radius = group["g_radius"]
+                    pspace_radius = group["pspace_radius"]
+                    ospace_radius = group["ospace_radius"]
                     approaching_area = plot_ellipse(semimaj=g_radius, semimin=g_radius, x_cent=group["pose"][0],y_cent=group["pose"][1], data_out=True)
                     approaching_filter, approaching_zones = approaching_area_filtering(approaching_area, self.costmap)
                     approaching_filter, approaching_zones = approaching_heuristic(g_radius, pspace_radius, group["pose"], approaching_filter, self.costmap, approaching_zones)
@@ -219,27 +221,32 @@ class ApproachingPose():
                     plt.show()
 
 
-                    len_areas = []
-                    for zone in approaching_zones:
-                        len_areas.append(len(zone))
+                    # Verificar se zonas de aproximacao estao vazias, se estiverm escolher outro grupo ou fazer break
+                    if approaching_zones:
+                        
+                        len_areas = []
+                        for zone in approaching_zones:
+                            len_areas.append(len(zone))
 
-                    # Choose the pose in the biggest approaching area 
+                        # Choose the pose in the biggest approaching area 
 
-                    idx = len_areas.index(max(len_areas))
-                    goal_pose = approaching_poses[idx][0:2]
-                    goal_quaternion = tf.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
-                    
+                        idx = len_areas.index(max(len_areas))
+                        goal_pose = approaching_poses[idx][0:2]
+                        goal_quaternion = tf.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
+                        
 
- 
-                    # try:
-                    #     rospy.loginfo("Approaching group!")
-                    #     result = movebase_client(goal_pose, goal_quaternion)
-                    #     if result:
-                    #         rospy.loginfo("Goal execution done!")
-                    #         break
-                    # except rospy.ROSInterruptException:
-                    #     rospy.loginfo("Navigation test finished.")
-                    
+    
+                        try:
+                            rospy.loginfo("Approaching group!")
+                            result = movebase_client(goal_pose, goal_quaternion)
+                            if result:
+                                rospy.loginfo("Goal execution done!")
+                                break
+                        except rospy.ROSInterruptException:
+                            rospy.loginfo("Navigation test finished.")
+                    else:
+                        rospy.loginfo("Impossible to approach group.") 
+                        break                       
 
 
 
