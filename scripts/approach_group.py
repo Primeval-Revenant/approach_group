@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from approaching_pose import approaching_area_filtering, approaching_heuristic, zones_center
 from plot_approach import plot_group, plot_person, draw_arrow
 # CONSTANTS
-# Human Body Dimensions top view in cm
+# Human Body Dimensions top view in m
 HUMAN_Y = 0.45
 HUMAN_X = 0.20
 
