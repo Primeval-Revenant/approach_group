@@ -17,7 +17,7 @@ from ellipse import plot_ellipse
 import numpy as np
 
 # Appeoachinf area radius increment in m
-R_STEP = 0.01
+R_STEP = 0.05
 
 # Thresold
 THRESHOLD = 127
