@@ -149,7 +149,7 @@ class ApproachingPose():
                         # ospace_radius Based on the farthest persons to the group center
                         g_radius, pspace_radius, ospace_radius = group_radius(tmp_group, [pose_x, pose_y,pose_yaw])
 
-                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parametetrs' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius})
+                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius})
                     else:
                         tmp_group.append([pose_x, pose_y, pose_yaw])
 
@@ -189,7 +189,7 @@ class ApproachingPose():
                     # Choose the nearest group
                     
                     group = goal_group
-                    g_radius = group["g_radius"] + 0.05 # Margin for safer results
+                    g_radius = group["g_radius"]  # Margin for safer results
                     pspace_radius = group["pspace_radius"]
                     ospace_radius = group["ospace_radius"]
                     approaching_area = plot_ellipse(semimaj=g_radius, semimin=g_radius, x_cent=group["pose"][0],y_cent=group["pose"][1], data_out=True)

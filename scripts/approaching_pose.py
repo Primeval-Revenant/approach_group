@@ -17,10 +17,10 @@ from ellipse import plot_ellipse
 import numpy as np
 
 # Appeoachinf area radius increment in m
-R_STEP = 0.05
+R_STEP = 0.01
 
 # Thresold
-THRESHOLD = 127
+THRESHOLD = 10
         # 127 -> cost -> definitely not in collision
         # http://wiki.ros.org/costmap_2d/hydro/inflation
 

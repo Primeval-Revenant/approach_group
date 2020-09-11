@@ -171,7 +171,7 @@ class ApproachingPose():
                     # Choose the nearest group
                     
                     group = goal_group
-                    g_radius = group["g_radius"] + 0.05 #Margin to for safer results
+                    g_radius = group["g_radius"]  #Margin to for safer results
                     pspace_radius = group["pspace_radius"]
                     ospace_radius = group["ospace_radius"]
                     approaching_area = plot_ellipse(semimaj=g_radius, semimin=g_radius, x_cent=group["pose"][0],y_cent=group["pose"][1], data_out=True)
@@ -196,9 +196,9 @@ class ApproachingPose():
 
                     t = rospy.Duration()
                     marker.lifetime = t
-                    marker.scale.x = 0.01
-                    marker.scale.y = 0.01
-                    marker.scale.z = 0.01
+                    marker.scale.x = 0.03
+                    marker.scale.y = 0.03
+                    marker.scale.z = 0.03
                     marker.color.a = 1.0
                     marker.color.r = 1.0
                     self.pubm.publish(marker)
