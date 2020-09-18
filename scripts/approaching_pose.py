@@ -117,14 +117,18 @@ def zones_center(approaching_zones, group_pos, group_radius):
     center_x = []
     center_y = []
     orientation = []
+    
     for zone in approaching_zones:
-        # Sort points clockwise
-        zone.sort(key=lambda c: math.atan2(c[0], c[1]))
+        if len(approaching_zones) != 1:
+            # Sort points clockwise
+            zone.sort(key=lambda c: math.atan2(c[0], c[1]))
+     
         idx = int(len(zone) / 2)
         center_x.append(zone[idx][0])
         center_y.append(zone[idx][1])
 
         orientation.append(get_angle(group_pos, (zone[idx][0], zone[idx][1])))
+
 
 
     return center_x, center_y, orientation
