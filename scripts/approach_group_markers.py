@@ -88,7 +88,7 @@ class ApproachingPose():
         self.costmap_received = False
         self.people_received = False
         self.groups = []
-        self. pose = []
+        self.pose = []
 
         self.pubm = rospy.Publisher('/approaching_area', Marker, queue_size=100)
         self.pubg = rospy.Publisher('/approaching_poses', PoseArray, queue_size=1)
@@ -185,7 +185,7 @@ class ApproachingPose():
                     marker.type = marker.SPHERE_LIST
                     marker.action = marker.ADD
                     marker.pose.orientation.w = 1
-
+                    
                     for point_f in approaching_filter:
                         
                         m_point = Point()
@@ -229,7 +229,7 @@ class ApproachingPose():
                         ap_pose.orientation.w = quaternion[3]
 
                         ap_points.poses.append(ap_pose)
-                    print("Publiquei")
+                    
                     self.pubg.publish(ap_points)
                     rospy.spin()
 

@@ -20,7 +20,7 @@ import numpy as np
 R_STEP = 0.01
 
 # Thresold
-THRESHOLD = 10
+THRESHOLD = 0
         # 127 -> cost -> definitely not in collision
         # http://wiki.ros.org/costmap_2d/hydro/inflation
 
@@ -73,7 +73,7 @@ def approaching_area_filtering(approaching_area, costmap):
         iy = int((y - (resolution/2) - oy) / resolution)
         index = iy * costmap.info.width + ix
 
-        if costmap.data[index] == 0:
+        if costmap.data[index] <= THRESHOLD: #
             approaching_filter.append((x, y))
             aux_list.append((x, y))
 
@@ -112,18 +112,20 @@ def approaching_heuristic(group_radius, pspace_radius, group_pos, approaching_fi
 def zones_center(approaching_zones, group_pos, group_radius):
     """ """
     # https://stackoverflow.com/questions/26951544/algorithm-find-the-midpoint-of-an-arc
+    #https://stackoverflow.com/questions/11674239/find-arcs-mid-point-given-start-end-and-center-of-circle-points
+    #https://stackoverflow.com/questions/26951544/algorithm-find-the-midpoint-of-an-arc
     center_x = []
     center_y = []
     orientation = []
-
     for zone in approaching_zones:
         # Sort points clockwise
         zone.sort(key=lambda c: math.atan2(c[0], c[1]))
-
         idx = int(len(zone) / 2)
         center_x.append(zone[idx][0])
         center_y.append(zone[idx][1])
+
         orientation.append(get_angle(group_pos, (zone[idx][0], zone[idx][1])))
+
 
     return center_x, center_y, orientation
 
