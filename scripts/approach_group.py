@@ -169,7 +169,7 @@ class ApproachingPose():
                 
                 if self.costmap_received and self.groups:
                     self.costmap_received = False
-
+                    
                     # # Choose the nearest pose
                     dis = 0
                     for idx,group in enumerate(self.groups):

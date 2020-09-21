@@ -6,12 +6,14 @@ import actionlib
 import math
 
 from nav_msgs.msg import OccupancyGrid
+from map_msgs.msg import OccupancyGridUpdate
 from group_msgs.msg import People, Groups
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Pose, PoseArray, Point
 from visualization_msgs.msg import Marker
+import matplotlib.pyplot as plt
 
-
+import numpy as np
 from ellipse import plot_ellipse
 import matplotlib.pyplot as plt
 
@@ -74,6 +76,12 @@ def group_radius(persons, group_pose):
     return group_radius, pspace_radius, ospace_radius
 
 
+def get_index(x, y, width):
+    """ """
+    
+    return (y * width) + x
+
+
 class ApproachingPose():
     """
     """
@@ -81,11 +89,17 @@ class ApproachingPose():
         """
         """
         rospy.init_node('ApproachPoseMarker', anonymous=True)
-        rospy.Subscriber("/move_base_flex/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
-        rospy.Subscriber("/groups",Groups , self.callbackGr, queue_size=1)
         self.loop_rate = rospy.Rate(rospy.get_param('~loop_rate', 10.0))
 
+        # https://answers.ros.org/question/207620/global-costmap-update/
+        # We need to subscribe both costmap and costmap update topic
+        rospy.Subscriber("/move_base_flex/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
+        rospy.Subscriber("/move_base_flex/global_costmap/costmap_updates",OccupancyGridUpdate , self.callbackCmUp, queue_size=10)
+        rospy.Subscriber("/groups",Groups , self.callbackGr, queue_size=1)
+        
+
         self.costmap_received = False
+        self.costmap_up_received = False
         self.people_received = False
         self.groups = []
         self.pose = []
@@ -95,6 +109,7 @@ class ApproachingPose():
 
     def callbackGr(self,data):
         """ Groups data callback. """
+
         self.people_received = True
         self.groups = []
      
@@ -136,8 +151,33 @@ class ApproachingPose():
              
     def callbackCm(self, data):
         """ Costmap Callback. """
+
         self.costmap = data
+        self.costmap_grid = list(data.data)
         self.costmap_received = True
+    
+
+    def callbackCmUp(self, data):
+        """ Costmap Update Callback. """
+
+        #https://answers.ros.org/question/207620/global-costmap-update/
+        # We have to update the global costmap with the global costmap update
+        if self.costmap_received:
+            self.costmap_up = data
+            self.costmap_up_received = True
+
+            # Update global costmap
+            idx = 0
+
+            for y in range(self.costmap_up.y, self.costmap_up.y + self.costmap_up.height):
+                for x in range(self.costmap_up.x, self.costmap_up.x + self.costmap_up.width):
+                
+                    
+                    self.costmap_grid[get_index(x,y, self.costmap.info.height)] = self.costmap_up.data[idx]
+                    idx +=1
+
+            self.costmap.data = tuple(self.costmap_grid)
+ 
 
            
     def run_behavior(self):
@@ -146,11 +186,12 @@ class ApproachingPose():
 
 
         while not rospy.is_shutdown():
+            
             if self.people_received and self.groups:
                 self.people_received = False
                 
-                if self.costmap_received and self.groups:
-                    self.costmap_received = False
+                if self.costmap_up_received and self.groups:
+                    self.costmap_up_received = False
 
                     # # Choose the nearest pose
                     dis = 0
@@ -158,7 +199,6 @@ class ApproachingPose():
 
                     # Choose the nearest group
                         dis_aux = euclidean_distance(group["pose"][0],group["pose"][1],self.pose[0], self.pose[1] )
-
                         if idx == 0:
                             goal_group = group
                             dis = dis_aux
@@ -174,6 +214,7 @@ class ApproachingPose():
                     g_radius = group["g_radius"]  #Margin to for safer results
                     pspace_radius = group["pspace_radius"]
                     ospace_radius = group["ospace_radius"]
+    
                     approaching_area = plot_ellipse(semimaj=g_radius, semimin=g_radius, x_cent=group["pose"][0],y_cent=group["pose"][1], data_out=True)
                     approaching_filter, approaching_zones = approaching_area_filtering(approaching_area, self.costmap)
                     approaching_filter, approaching_zones = approaching_heuristic(g_radius, pspace_radius, group["pose"], approaching_filter, self.costmap, approaching_zones)
@@ -231,7 +272,8 @@ class ApproachingPose():
                         ap_points.poses.append(ap_pose)
                     
                     self.pubg.publish(ap_points)
-                    rospy.spin()
+                        
+                    rospy.sleep(1)
 
 
 
