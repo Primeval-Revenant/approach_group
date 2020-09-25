@@ -273,7 +273,7 @@ class ApproachingPose():
                     
                     self.pubg.publish(ap_points)
                         
-                    rospy.sleep(1)
+                    #rospy.sleep(1)
 
 
 
