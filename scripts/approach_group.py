@@ -136,10 +136,10 @@ class ApproachingPose():
             tmp_group = []
             if len(group.people) > 1: # Only store groups, ignore individuals
                 for people in group.people:
-                    (px, py) = rotate(people.position.x, people.position.y, t_yaw)
-                    pose_x = px + tx
-                    pose_y = py + ty
-                    pose_yaw = people.orientation + t_yaw
+                    
+                    pose_x = people.position.x
+                    pose_y = people.position.y
+                    pose_yaw = people.orientation 
 
                     
   
