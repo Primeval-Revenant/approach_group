@@ -17,7 +17,7 @@ import PyKDL
 from human_awareness_msgs.msg import PersonTracker, TrackedPersonsList
 
 rospy.init_node("faces_detector")
-message_pub = rospy.Publisher("/faces_vision", TrackedPersonsList, queue_size=10)
+message_pub = rospy.Publisher("/human_awareness_tracker/trackers_list", TrackedPersonsList, queue_size=10)
 
 
 def callback(data):
