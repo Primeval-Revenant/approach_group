@@ -199,10 +199,10 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <state world_name='default'>
-      <sim_time>00 0000000</sim_time>
-      <real_time>00 00000000</real_time>
-      <wall_time>1652110660 551067737</wall_time>
-      <iterations>26603</iterations>
+      <sim_time>411 628000000</sim_time>
+      <real_time>71 557338980</real_time>
+      <wall_time>1656006045 918714848</wall_time>
+      <iterations>36256</iterations>
       <model name='7thmap'>
         <pose frame=''>9 -10 0 0 -0 0</pose>
         <scale>1 1 1</scale>
@@ -224,33 +224,43 @@
         </link>
       </model>
       <model name='pessoa1'>
-        <pose frame=''>-2.43194 2.12584 0.000715 -0.005712 -0.011634 -0.000622</pose>
+        <pose frame=''>-2.43195 2.12584 0.000427 0.001601 -0.025058 -0.000757</pose>
         <scale>1 1 1</scale>
         <link name='base'>
-          <pose frame=''>-2.43194 2.12584 0.000715 -0.005712 -0.011634 -0.000622</pose>
+          <pose frame=''>-2.43195 2.12584 0.000427 0.001601 -0.025058 -0.000757</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0.0002 -0.000663 3.07083 0.837708 0.180116 -4e-06</acceleration>
-          <wrench>0.0002 -0.000663 3.07083 0 -0 0</wrench>
+          <acceleration>6.1e-05 -0.000284 0.418015 0.66509 0.142914 0</acceleration>
+          <wrench>6.1e-05 -0.000284 0.418015 0 -0 0</wrench>
         </link>
       </model>
       <model name='pessoa2'>
-        <pose frame=''>-3.48764 1.46184 0.010913 0.012545 0.002312 1.56242</pose>
+        <pose frame=''>-3.48764 1.46184 0.010911 0.012565 0.002311 1.56242</pose>
         <scale>1 1 1</scale>
         <link name='base'>
-          <pose frame=''>-3.48764 1.46184 0.010913 0.012545 0.002312 1.56242</pose>
+          <pose frame=''>-3.48764 1.46184 0.010911 0.012565 0.002311 1.56242</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0.013823 -0.008591 1.44159 0.787443 1.26723 0</acceleration>
-          <wrench>0.013823 -0.008591 1.44159 0 -0 0</wrench>
+          <acceleration>0 -0 -0 0 -0 0</acceleration>
+          <wrench>0 -0 -0 0 -0 0</wrench>
         </link>
       </model>
       <model name='pessoa3'>
-        <pose frame=''>-2.66594 0.4114 -0.011168 -0.009078 -0.00344 -3.135</pose>
+        <pose frame=''>-2.66594 0.411411 -0.011211 -0.010091 -0.003651 -3.135</pose>
         <scale>1 1 1</scale>
         <link name='base'>
-          <pose frame=''>-2.66594 0.4114 -0.011168 -0.009078 -0.00344 -3.135</pose>
+          <pose frame=''>-2.66594 0.411411 -0.011211 -0.010091 -0.003651 -3.135</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>-0.019836 -0.003754 -0.345707 2.80569 1.36515 -3.14159</acceleration>
-          <wrench>-0.019836 -0.003754 -0.345707 0 -0 0</wrench>
+          <acceleration>0 0 -9.8 0 -0 0</acceleration>
+          <wrench>0 0 -9.8 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='pessoa3_clone'>
+        <pose frame=''>-1.8285 1.28288 -0.011173 -0.010091 -0.003651 -1.55853</pose>
+        <scale>1 1 1</scale>
+        <link name='base'>
+          <pose frame=''>-1.8285 1.28288 -0.011173 -0.010091 -0.003651 -1.55853</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>-0.007635 0.039157 0.682095 -2.77852 0.68373 -3e-06</acceleration>
+          <wrench>-0.007635 0.039157 0.682095 0 -0 0</wrench>
         </link>
       </model>
       <light name='my_light_01'>
@@ -274,7 +284,7 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose frame=''>-1.09838 -0.050433 7.34847 3.14159 1.57079 3.14159</pose>
+        <pose frame=''>-2.77454 1.12719 11.8808 3.14159 1.57079 3.14159</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
@@ -438,5 +448,57 @@
     <audio>
       <device>default</device>
     </audio>
+    <model name='pessoa3_clone'>
+      <static>0</static>
+      <link name='base'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <collision name='collision'>
+          <geometry>
+            <mesh>
+              <uri>model://pessoa3/meshes/models/pessoa3.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <pose frame=''>0 0 0 0 -0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://pessoa3/meshes/models/pessoa3.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </visual>
+        <self_collide>0</self_collide>
+        <inertial>
+          <pose frame=''>0 0 0 0 -0 0</pose>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+          <mass>1</mass>
+        </inertial>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose frame=''>-1.44466 1.28483 -0.011173 -0.010091 -0.003651 -3.135</pose>
+    </model>
   </world>
 </sdf>

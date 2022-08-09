@@ -5,7 +5,7 @@
   <!-- Load Yarp plugins for real robot execution -->
   <arg name="use_yarp" default="false"/>
   <!-- rviz -->
-  <arg name="rviz" default="true"/>
+  <arg name="rviz" default="false"/>
 
   <!-- Robot pose relative to the map -->
   <arg name="pose" default="-x 0.0 -y 0.0 -z 0.0 -R 0.0 -P 0.0 -Y 3.1415"/>
@@ -20,10 +20,10 @@
   <arg name="obstacles_map_file" default="isr_7th_floor_simulation.yaml"/>
 
   <!-- Use lighter fake localization for simulation -->
-  <arg name="fake_localization" default="true"/>
+  <arg name="fake_localization" default="false"/>
 
   <!-- Map -->
-  <arg name="world" default="isr_7th_floor.world"/>
+  <arg name="world" default="isr_7th_floor_test3.world"/>
   <arg name="world_pkg" default="$(find approach_group)"/>
   <arg name="map_frame" default="map"/>
 
@@ -50,12 +50,7 @@
     <arg name="gui" value="$(arg gazebo_gui)"/>
   </include>
   <!-- Fake face detector -->
-  <node pkg="approach_group" type="fake_face_detector.py" name="fake_face_detector"/>
-
-
-  <!-- Approach group noder -->
-    <!-- <node pkg="approach_group" type="approach_group.py" name="approach_group"/>-->
-
+  <node pkg="approach_group" type="fake_people.py" name="fake_face_detector"/>
 
   <node type="rviz" name="rviz_view" pkg="rviz" args="-d $(find approach_group)/rviz/config.rviz" />
 
@@ -66,5 +61,8 @@
   </node>
 
   <node pkg="adaptive_social_layers" type="people_publisher.py" name="people_publisher"/>
+
+  <!-- Approach group noder -->
+  <!--node pkg="approach_group" type="approach_group.py" name="approach_group"/-->
 
 </launch>

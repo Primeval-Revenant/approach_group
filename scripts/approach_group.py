@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
 import rospy
-import tf
+import tf as convert
+import tf2_ros as tf
 import actionlib 
 import math
+import numpy as np
 
 from nav_msgs.msg import OccupancyGrid
 from group_msgs.msg import People, Groups
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from geometry_msgs.msg import Pose, PoseArray
+from geometry_msgs.msg import Pose, PoseArray, PointStamped
 from ellipse import plot_ellipse
+from sys import getsizeof, argv
 import matplotlib.pyplot as plt
 
 from approaching_pose import approaching_area_filtering, approaching_heuristic, zones_center
@@ -72,6 +75,7 @@ def group_radius(persons, group_pose):
 
     sum_radius = 0
     for person in persons:
+        
         # average of the distance between the group members and the center of the group, o-space radius
         distance = euclidean_distance(person[0],
                                       person[1], group_pose[0], group_pose[1])
@@ -104,54 +108,25 @@ class ApproachingPose():
         """
         """
         rospy.init_node('ApproachPose', anonymous=True)
-        rospy.Subscriber("/move_base_flex/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
         rospy.Subscriber("/groups",Groups , self.callbackGr, queue_size=1)
+        rospy.Subscriber("/clicked_point",PointStamped, self.callbackPoint, queue_size=1)
         self.loop_rate = rospy.Rate(rospy.get_param('~loop_rate', 10.0))
 
         self.costmap_received = False
         self.people_received = False
         self.groups = []
-        self. pose = []
+        self.pose = []
+        self.point_clicked = []
+        self.groups_data = []
+        self.plotting = False
 
     def callbackGr(self,data):
         """ Groups data callback. """
         self.people_received = True
-        self.groups = []
+        self.groups_data = data
      
-        listener = tf.TransformListener()
-
-        while not rospy.is_shutdown():
-            try:
-                (trans,rot) = listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
-                break
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                continue
-
-        tx = trans[0]
-        ty = trans[1]
-        (_, _, t_yaw) = tf.transformations.euler_from_quaternion(rot)
-        self.pose = [tx, ty, t_yaw]
-
-        for group in data.groups:
-            tmp_group = []
-            if len(group.people) > 1: # Only store groups, ignore individuals
-                for people in group.people:
-                    
-                    pose_x = people.position.x
-                    pose_y = people.position.y
-                    pose_yaw = people.orientation 
-
-                    
-  
-                    if people.ospace:
-                        # group_radius average of the distance of the group members to the center
-                        # pspace_radius  Based on the closest person to the group center
-                        # ospace_radius Based on the farthest persons to the group center
-                        g_radius, pspace_radius, ospace_radius = group_radius(tmp_group, [pose_x, pose_y,pose_yaw])
-
-                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius})
-                    else:
-                        tmp_group.append([pose_x, pose_y, pose_yaw])
+    def callbackPoint(self,data):
+        self.point_clicked = data
 
              
     def callbackCm(self, data):
@@ -163,97 +138,115 @@ class ApproachingPose():
     def run_behavior(self):
         """
         """
+        tfBuffer = tf.Buffer()
+
+        listener = tf.TransformListener(tfBuffer)
+
+        rate = rospy.Rate(10.0)
         while not rospy.is_shutdown():
-            if self.people_received and self.groups:
+
+            try:
+                transf = tfBuffer.lookup_transform('map', 'base_footprint', rospy.Time())
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                rate.sleep()
+                continue
+
+            tx = transf.transform.translation.x
+            ty = transf.transform.translation.y
+            quatern = (transf.transform.rotation.x, transf.transform.rotation.y, transf.transform.rotation.z, transf.transform.rotation.w)
+            (_, _, t_yaw) = convert.transformations.euler_from_quaternion(quatern)
+            self.pose = [tx, ty, t_yaw]
+            if self.people_received and self.groups_data and self.point_clicked:
+
                 self.people_received = False
+
+                rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
                 
-                if self.costmap_received and self.groups:
+                if self.costmap_received and self.groups_data and self.point_clicked:
                     self.costmap_received = False
                     
-                    # # Choose the nearest pose
-                    dis = 0
-                    for idx,group in enumerate(self.groups):
+                    self.groups = []
+                    for group in self.groups_data.groups:
+                        tmp_group = []
 
-                    # Choose the nearest group
-                        dis_aux = euclidean_distance(group["pose"][0],group["pose"][1],self.pose[0], self.pose[1] )
+                        if len(group.people) > 1: # Only store groups, ignore individuals
+                            for people in group.people:
+                
+                                pose_x = people.position.x
+                                pose_y = people.position.y
+                                pose_yaw = people.orientation 
 
-                        if idx == 0:
-                            goal_group = group
-                            dis = dis_aux
-                        elif dis > dis_aux:
-                            goal_group = group
-                            dis = dis_aux
+                
 
-                    # Meter algures uma condicap que verifica que se nao for possivel aproximar o grupo escolher outro
-                    #Tentar plotar costmap
-                    # Choose the nearest group
+                                if people.ospace:
+                                    # group_radius average of the distance of the group members to the center
+                                    # pspace_radius  Based on the closest person to the group center
+                                    # ospace_radius Based on the farthest persons to the group center
+                                    g_radius, pspace_radius, ospace_radius = group_radius(tmp_group, [pose_x, pose_y,pose_yaw])
+
+                                    self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius})
+                                else:
+                                    tmp_group.append([pose_x, pose_y, pose_yaw])
+                        else:
+                            for people in group.people:
+                                tmp_group.append([people.position.x, people.position.y, people.orientation])
+                                self.groups.append({'members': tmp_group, 'pose': [people.position.x, people.position.y, people.orientation],'parameters' :[people.sx, people.sy]})
+
+
+                    # Calculate the distances between the chosen point and every group
+                    dis = []
+                    for idx,group in enumerate(self.groups):   
+                        dis.append(euclidean_distance(group["pose"][0],group["pose"][1],self.point_clicked.point.x, self.point_clicked.point.y))
+
+                    self.point_clicked = []
+
+                    group_idx = np.argsort(dis)
+
+                    # Try to find an appropriate pose and approach a group, starting from the one closest to the chosen point
+                    for group_idxs in group_idx:
+
+                        rospy.loginfo("Trying group %d",group_idxs)
                     
-                    group = goal_group
-                    g_radius = group["g_radius"]  # Margin for safer results
-                    pspace_radius = group["pspace_radius"]
-                    ospace_radius = group["ospace_radius"]
-                    approaching_area = plot_ellipse(semimaj=g_radius, semimin=g_radius, x_cent=group["pose"][0],y_cent=group["pose"][1], data_out=True)
-                    approaching_filter, approaching_zones = approaching_area_filtering(approaching_area, self.costmap)
-                    approaching_filter, approaching_zones = approaching_heuristic(g_radius, pspace_radius, group["pose"], approaching_filter, self.costmap, approaching_zones)
-
-
-            
-                    center_x, center_y, orientation = zones_center(
-                        approaching_zones, group["pose"], g_radius)
-
-                    approaching_poses = []
-                    for l, _ in enumerate(center_x):
-                        approaching_poses.append((center_x[l], center_y[l], orientation[l]))
-
-                    fig = plt.figure()
-                    ax = fig.add_subplot(1, 1, 1)
-                    plot_kwargs = {'color': 'g', 'linestyle': '-', 'linewidth': 0.8}
-                    for person in group["members"]:
-                        plot_person(person[0], person[1], person[2], ax, plot_kwargs)
-
-                    _ = plot_group(group["pose"], g_radius, pspace_radius, ospace_radius, ax)
-
-                    for i, angle in enumerate(orientation):
-                        draw_arrow(center_x[i], center_y[i], angle, ax)
-                    x_approach = [j[0] for j in approaching_filter]
-                    y_approach = [k[1] for k in approaching_filter]
-                    ax.plot(x_approach, y_approach, 'c.', markersize=5)
-                    ax.plot(center_x, center_y, 'r.', markersize=5)
-                    ax.set_aspect(aspect=1)
-                    #fig.tight_layout()
-                    plt.show()
-
-
-                    # Verificar se zonas de aproximacao estao vazias, se estiverm escolher outro grupo ou fazer break
-                    if approaching_zones:
+                        group = self.groups[group_idxs]
                         
-                        len_areas = []
-                        for zone in approaching_zones:
-                            len_areas.append(len(zone))
+                        if len(group['members']) > 1:
 
-                        # Choose the pose in the biggest approaching area 
+                            g_radius = group["g_radius"]  # Margin for safer results
+                            pspace_radius = group["pspace_radius"]
+                            ospace_radius = group["ospace_radius"]
 
-                        idx = len_areas.index(max(len_areas))
-                        goal_pose = approaching_poses[idx][0:2]
-                        goal_quaternion = tf.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
-                        
+                        else:
+                            g_radius = 0.9
+                            p_space_radius = 1.2
+                            ospace_radius = 0.45
 
-    
-                        try:
-                            rospy.loginfo("Approaching group!")
-                            result = movebase_client(goal_pose, goal_quaternion)
-                            if result:
-                                rospy.loginfo("Goal execution done!")
-                                break
-                        except rospy.ROSInterruptException:
-                            rospy.loginfo("Navigation test finished.")
+                        approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
 
-                    else:
-                        rospy.loginfo("Impossible to approach group.") 
-                      
+                        # Verify if there are approaching zones. If yes, ensure they are of appropriate size. Choose the nearest that fulfills this condition.
+                        if approaching_zones:
 
+                            #Attempt to approach the chosen zone.
+                            if idx == -1:
+                                rospy.loginfo("Impossible to approach group due to insufficient space.")
+                            else:
+                                goal_pose = approaching_poses[idx][0:2]
+                                goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
+                                try:
+                                    rospy.loginfo("Approaching group!")
+                                    result = movebase_client(goal_pose, goal_quaternion)
+                                    if result:
+                                        rospy.loginfo("Goal execution done!")
+                                        break
+                                except rospy.ROSInterruptException:
+                                    rospy.loginfo("Navigation test finished.")
 
-
+                        else:
+                            rospy.loginfo("Impossible to approach group due to no approach poses.") 
+                    break
+                            
+                                
 if __name__ == '__main__':
     approaching_pose = ApproachingPose()
+    if len(argv) > 1 and argv[1] == 'print':
+        approaching_pose.plotting = True
     approaching_pose.run_behavior()

@@ -12,6 +12,7 @@ import numpy as np
 from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import Pose, PoseArray
 import tf_conversions.posemath as pm
+import tf2_geometry_msgs as kdl
 import PyKDL
 
 
@@ -37,6 +38,7 @@ def callback(data):
         robot_pose.orientation.w = float(data.pose[i].orientation.w)
 
     map_to_robot_tf = pm.fromMsg(robot_pose)
+    #map_to_robot_tf = kdl.from_msg_msg(robot_pose)
 
 
 
@@ -53,6 +55,7 @@ def callback(data):
 
 
         person_pose = pm.fromMsg(data.pose[i])
+        #person_pose = kdl.from_msg_msg(data.pose[i])
         rot = person_pose.M
         pos = person_pose.p
 
@@ -69,6 +72,7 @@ def callback(data):
 
 
         person = pm.toMsg(map_to_robot_tf.Inverse()*rotated)
+        #person = kdl.to_msg_msg(map_to_robot_tf.Inverse()*rotated)
 
 
         #Add height to simulate that the face was detected

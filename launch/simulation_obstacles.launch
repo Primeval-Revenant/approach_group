@@ -54,7 +54,7 @@
 
 
   <!-- Approach group noder -->
-    <!-- <node pkg="approach_group" type="approach_group.py" name="approach_group"/>-->
+  <!--node pkg="approach_group" type="approach_group.py" name="approach_group"/-->
 
 
   <node type="rviz" name="rviz_view" pkg="rviz" args="-d $(find approach_group)/rviz/config.rviz" />
