@@ -311,8 +311,8 @@ def callback(data):
         person_tracker.head_pose.position.z += 1.7
         person_tracker.head_pose.orientation = person.pose.orientation
 
-        # person_tracker.velocity.linear.x = -data.twist[i].linear.x
-        # person_tracker.velocity.linear.y = -data.twist[i].linear.y
+        person_tracker.velocity.linear.x = -data.twist[i].linear.x
+        person_tracker.velocity.linear.y = -data.twist[i].linear.y
 
 
         #If people are too far away or behind the robot, we can't detect them

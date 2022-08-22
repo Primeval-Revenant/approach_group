@@ -183,9 +183,6 @@ class ApproachingPose():
                                     # pspace_radius  Based on the closest person to the group center
                                     # ospace_radius Based on the farthest persons to the group center
                                     g_radius, pspace_radius, ospace_radius = group_radius(tmp_group, [pose_x, pose_y,pose_yaw])
-
-                                    self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius})
-                                else:
                                     tmp_group.append([pose_x, pose_y, pose_yaw])
                         else:
                             for people in group.people:

@@ -23,7 +23,7 @@
   <arg name="fake_localization" default="false"/>
 
   <!-- Map -->
-  <arg name="world" default="isr_7th_floor_test3.world"/>
+  <arg name="world" default="isr_7th_floor_dynamic_test.world"/>
   <arg name="world_pkg" default="$(find approach_group)"/>
   <arg name="map_frame" default="map"/>
 
@@ -52,7 +52,12 @@
   <!-- Fake face detector -->
   <node pkg="approach_group" type="fake_people.py" name="fake_face_detector"/>
 
-  <node type="rviz" name="rviz_view" pkg="rviz" args="-d $(find approach_group)/rviz/config.rviz" />
+  <node type="rviz" name="rviz_view" pkg="rviz" args="-d $(find approach_group)/rviz/config_dynamic.rviz" />
+
+  <!-- Control modules -->
+  <node pkg="approach_group" type="control_person_1.py" name="control_person_1"/>
+  <node pkg="approach_group" type="control_person_2.py" name="control_person_2"/>
+  <node pkg="approach_group" type="control_person_3.py" name="control_person_3"/>
 
 
   <!-- Fake speech server -->
