@@ -97,6 +97,8 @@ def group_radius(persons, group_pose):
 
     pspace_radius += HUMAN_X / 2
     ospace_radius -= HUMAN_X / 2
+
+
     group_radius = sum_radius / len(persons)
     return group_radius, pspace_radius, ospace_radius
 
@@ -176,13 +178,14 @@ class ApproachingPose():
                                 pose_y = people.position.y
                                 pose_yaw = people.orientation 
 
-                
 
                                 if people.ospace:
                                     # group_radius average of the distance of the group members to the center
                                     # pspace_radius  Based on the closest person to the group center
                                     # ospace_radius Based on the farthest persons to the group center
                                     g_radius, pspace_radius, ospace_radius = group_radius(tmp_group, [pose_x, pose_y,pose_yaw])
+                                    self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius})
+                                else:
                                     tmp_group.append([pose_x, pose_y, pose_yaw])
                         else:
                             for people in group.people:
