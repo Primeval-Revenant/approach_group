@@ -179,6 +179,7 @@ class ApproachingPose():
         listener = tf.TransformListener(tfBuffer)
 
         rate = rospy.Rate(10.0)
+        rate2 = rospy.Rate(3.0)
         while not rospy.is_shutdown():
 
             try:
@@ -235,61 +236,69 @@ class ApproachingPose():
                     self.point_clicked = []
 
                     while True:
-
-                        group_idx = np.argsort(dis)
-
-                        # Try to find an appropriate pose and approach a group, starting from the one closest to the chosen point
-
-                        #rospy.loginfo("Trying group %d",group_idx[0])
-                    
-                        group = self.groups[group_idx[0]]
-
-                        self.target = (group["pose"][0],group["pose"][1])
-
-                        targetsend = PointStamped()
-                        targetsend.header.frame_id = "/map"
-                        targetsend.point.x = group["pose"][0]
-                        targetsend.point.y = group["pose"][1]
-                        self.pub.publish(targetsend)
                         
-                        if len(group['members']) > 1:
+                        rospy.loginfo(self.groups)
+                        if self.groups:
+                            group_idx = np.argsort(dis)
 
-                            g_radius = group["g_radius"]  # Margin for safer results
-                            pspace_radius = group["pspace_radius"]
-                            ospace_radius = group["ospace_radius"]
+                            # Try to find an appropriate pose and approach a group, starting from the one closest to the chosen point
 
-                        else:
-                            g_radius = 0.9
-                            p_space_radius = 1.2
-                            ospace_radius = 0.45
+                            #rospy.loginfo("Trying group %d",group_idx[0])
 
-                        approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
+                            map_subscriber.unregister()
 
-                        # Verify if there are approaching zones. If yes, ensure they are of appropriate size. Choose the nearest that fulfills this condition.
-                        if approaching_zones:
+                            map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
+                        
+                            group = self.groups[group_idx[0]]
 
-                            #Attempt to approach the chosen zone.
-                            if idx == -1:
-                                rospy.loginfo("Impossible to approach group due to insufficient space.")
+                            self.target = (group["pose"][0],group["pose"][1])
+
+                            targetsend = PointStamped()
+                            targetsend.header.frame_id = "/map"
+                            targetsend.point.x = group["pose"][0]
+                            targetsend.point.y = group["pose"][1]
+                            self.pub.publish(targetsend)
+                            
+                            if len(group['members']) > 1:
+
+                                g_radius = group["g_radius"]  # Margin for safer results
+                                pspace_radius = group["pspace_radius"]
+                                ospace_radius = group["ospace_radius"]
+
                             else:
-                                goal_pose = approaching_poses[idx][0:2]
-                                goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
-                                try:
-                                    #rospy.loginfo("Approaching group!")
-                                    result = movebase_client(goal_pose, goal_quaternion)
-                                    if self.moveresult:
-                                        if self.moveresult.status.status == 3:
-                                            rospy.loginfo("Goal execution done!")
-                                            break
-                                except rospy.ROSInterruptException:
-                                    rospy.loginfo("Navigation test finished.")
+                                g_radius = 0.9
+                                p_space_radius = 1.2
+                                ospace_radius = 0.45
 
-                        else:
-                            rospy.loginfo("Impossible to approach group due to no approach poses.") 
+                            approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
 
-                        dis = []
-                        for idx,group in enumerate(self.groups):   
-                            dis.append(euclidean_distance(group["pose"][0],group["pose"][1],self.target[0], self.target[1]))
+                            # Verify if there are approaching zones. If yes, ensure they are of appropriate size. Choose the nearest that fulfills this condition.
+                            if approaching_zones:
+
+                                #Attempt to approach the chosen zone.
+                                if idx == -1:
+                                    rospy.loginfo("Impossible to approach group due to insufficient space.")
+                                else:
+                                    goal_pose = approaching_poses[idx][0:2]
+                                    goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
+                                    try:
+                                        #rospy.loginfo("Approaching group!")
+                                        result = movebase_client(goal_pose, goal_quaternion)
+                                        if self.moveresult:
+                                            if self.moveresult.status.status == 3:
+                                                rospy.loginfo("Goal execution done!")
+                                                break
+                                    except rospy.ROSInterruptException:
+                                        rospy.loginfo("Navigation test finished.")
+
+                            else:
+                                rospy.loginfo("Impossible to approach group due to no approach poses.") 
+
+                            dis = []
+                            for idx,group in enumerate(self.groups):   
+                                dis.append(euclidean_distance(group["pose"][0],group["pose"][1],self.target[0], self.target[1]))
+
+                            rate2.sleep()
                         
                     break
                             
@@ -314,5 +323,6 @@ if __name__ == '__main__':
 #iterate group center as clicked point to always keep awareness of which group to approach even if they move - DONE
 
 #change loop conditions. Current ones don't allow constant awareness of robot position. - TODO
-#Figure out why vizzy has dificulty navigating after goal moves. Check that goal is the correct one? - TODO
+#Figure out why vizzy has dificulty navigating after goal moves. Check that goal is the correct one? - DONE??
 #publish approach poses??? - TODO
+#get average velocity of people in group to adjust model. alter group model -> direction consistent with velocity, adjust variance with velocity - TODO
