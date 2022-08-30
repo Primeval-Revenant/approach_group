@@ -18,13 +18,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from plot_approach import plot_group, plot_person, draw_arrow
 
-# Appeoaching area radius increment in m
+# Approaching area radius increment in m
 R_STEP = 0.01
 
 # Thresold
 THRESHOLD = 127
         # 127 -> cost -> definitely not in collision
         # http://wiki.ros.org/costmap_2d/hydro/inflation
+
+costconvert = []
+costconvert.append(0)
+for i in range(1,99):
+    costconvert.append(round((((i-1)*251)/97)+1))
+
+costconvert.append(253)
+costconvert.append(254)
+costconvert.append(255)
 
 def get_angle(pos1, pos2):
     "Angle between two points"
@@ -59,7 +68,6 @@ def approaching_area_filtering(approaching_area, costmap, group, FOVcheck):
     approaching_filter = []
     approaching_zones = []
     aux_list = []
-    costconvert = []
 
     Firstbool = True
     First = False
@@ -67,14 +75,6 @@ def approaching_area_filtering(approaching_area, costmap, group, FOVcheck):
     ox = costmap.info.origin.position.x
     oy = costmap.info.origin.position.y 
     resolution = costmap.info.resolution
-
-    costconvert.append(0)
-    for i in range(1,99):
-        costconvert.append(round((((i-1)*251)/97)+1))
-
-    costconvert.append(253)
-    costconvert.append(254)
-    costconvert.append(255)
 
     for x, y in zip(approaching_area[0], approaching_area[1]):
         ix = int((x - (resolution/2) - ox) / resolution)

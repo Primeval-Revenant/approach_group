@@ -182,17 +182,6 @@ class ApproachingPose():
         rate2 = rospy.Rate(3.0)
         while not rospy.is_shutdown():
 
-            try:
-                transf = tfBuffer.lookup_transform('map', 'base_footprint', rospy.Time())
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                rate.sleep()
-                continue
-
-            tx = transf.transform.translation.x
-            ty = transf.transform.translation.y
-            quatern = (transf.transform.rotation.x, transf.transform.rotation.y, transf.transform.rotation.z, transf.transform.rotation.w)
-            (_, _, t_yaw) = convert.transformations.euler_from_quaternion(quatern)
-            self.pose = [tx, ty, t_yaw]
             if self.people_received and self.groups_data and self.point_clicked:
 
                 self.people_received = False
@@ -201,32 +190,6 @@ class ApproachingPose():
                 
                 if self.costmap_received and self.groups_data and self.point_clicked:
                     self.costmap_received = False
-                    
-                    # self.groups = []
-                    # for group in self.groups_data.groups:
-                    #     tmp_group = []
-
-                    #     if len(group.people) > 1: # Only store groups, ignore individuals
-                    #         for people in group.people:
-                
-                    #             pose_x = people.position.x
-                    #             pose_y = people.position.y
-                    #             pose_yaw = people.orientation 
-
-
-                    #             if people.ospace:
-                    #                 # group_radius average of the distance of the group members to the center
-                    #                 # pspace_radius  Based on the closest person to the group center
-                    #                 # ospace_radius Based on the farthest persons to the group center
-                    #                 g_radius, pspace_radius, ospace_radius = group_radius(tmp_group, [pose_x, pose_y,pose_yaw])
-                    #                 self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius})
-                    #             else:
-                    #                 tmp_group.append([pose_x, pose_y, pose_yaw])
-                    #     else:
-                    #         for people in group.people:
-                    #             tmp_group.append([people.position.x, people.position.y, people.orientation])
-                    #             self.groups.append({'members': tmp_group, 'pose': [people.position.x, people.position.y, people.orientation],'parameters' :[people.sx, people.sy]})
-
 
                     # Calculate the distances between the chosen point and every group
                     dis = []
@@ -235,9 +198,20 @@ class ApproachingPose():
 
                     self.point_clicked = []
 
-                    while True:
+                    while not rospy.is_shutdown():
                         
-                        rospy.loginfo(self.groups)
+                        try:
+                            transf = tfBuffer.lookup_transform('map', 'base_footprint', rospy.Time())
+                        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                            rate.sleep()
+                            continue
+
+                        tx = transf.transform.translation.x
+                        ty = transf.transform.translation.y
+                        quatern = (transf.transform.rotation.x, transf.transform.rotation.y, transf.transform.rotation.z, transf.transform.rotation.w)
+                        (_, _, t_yaw) = convert.transformations.euler_from_quaternion(quatern)
+                        self.pose = [tx, ty, t_yaw]
+
                         if self.groups:
                             group_idx = np.argsort(dis)
 
@@ -282,7 +256,6 @@ class ApproachingPose():
                                     goal_pose = approaching_poses[idx][0:2]
                                     goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
                                     try:
-                                        #rospy.loginfo("Approaching group!")
                                         result = movebase_client(goal_pose, goal_quaternion)
                                         if self.moveresult:
                                             if self.moveresult.status.status == 3:
@@ -313,7 +286,7 @@ if __name__ == '__main__':
 #Setup id - TODO
 #Setup node to transfer info between publisher and approach - DONE
 #Deal with groups and individuals - DONE
-#Prepare to test unregistering the costmap subscriber - best case scenario, it updates. - TODO
+#Prepare to test unregistering the costmap subscriber - best case scenario, it updates. - TEST MORE
 #Dynamic move orders - Just remove wait result and rewrite the client function - DONE
 #Setup result positive as a stop condition? Prevent future infinite loop problems? - DONE
 #Figure out how else to apply ids - TODO
@@ -322,7 +295,9 @@ if __name__ == '__main__':
 #add center detection to approach target in people_publisher - DONE
 #iterate group center as clicked point to always keep awareness of which group to approach even if they move - DONE
 
-#change loop conditions. Current ones don't allow constant awareness of robot position. - TODO
+#change loop conditions. Current ones don't allow constant awareness of robot position. - DONE
 #Figure out why vizzy has dificulty navigating after goal moves. Check that goal is the correct one? - DONE??
 #publish approach poses??? - TODO
-#get average velocity of people in group to adjust model. alter group model -> direction consistent with velocity, adjust variance with velocity - TODO
+#get average velocity of people in group to adjust model. alter group model -> direction consistent with velocity, adjust variance with velocity - MOSTLY DONE, NEED TO ADAPT FORMULA
+#Adapt approach pose when moving. Change position of approach pose maybe? Make approach pose algorithm receive velocity. change messages- TODO
+#Change group model algorithm in the adaptive layer - TODO
