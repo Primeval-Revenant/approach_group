@@ -116,6 +116,7 @@ class ApproachingPose():
         rospy.Subscriber("/clicked_point",PointStamped, self.callbackPoint, queue_size=1)
         rospy.Subscriber("/move_base/result",MoveBaseActionResult, self.callbackMoveResult, queue_size=1)
         self.pub = rospy.Publisher('/approach_target', PointStamped, queue_size=1)
+        self.pubap = rospy.Publisher('/approach_poses', PoseArray, queue_size=1)
         self.loop_rate = rospy.Rate(rospy.get_param('~loop_rate', 10.0))
 
         self.costmap_received = False
@@ -150,13 +151,13 @@ class ApproachingPose():
                         # pspace_radius  Based on the closest person to the group center
                         # ospace_radius Based on the farthest persons to the group center
                         g_radius, pspace_radius, ospace_radius = group_radius(tmp_group, [pose_x, pose_y,pose_yaw])
-                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius})
+                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius, 'velocity': [people.velocity.linear.x, people.velocity.linear.y]})
                     else:
                         tmp_group.append([pose_x, pose_y, pose_yaw])
             else:
                 for people in group.people:
                     tmp_group.append([people.position.x, people.position.y, people.orientation])
-                    self.groups.append({'members': tmp_group, 'pose': [people.position.x, people.position.y, people.orientation],'parameters' :[people.sx, people.sy]})
+                    self.groups.append({'members': tmp_group, 'pose': [people.position.x, people.position.y, people.orientation],'parameters' :[people.sx, people.sy], 'velocity': [people.velocity.linear.x, people.velocity.linear.y]})
      
     def callbackPoint(self,data):
         self.point_clicked = data
@@ -246,6 +247,26 @@ class ApproachingPose():
 
                             approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
 
+                            ap_pub = PoseArray()
+                            ap_pub.header.frame_id = "/map"
+                            ap_pub.header.stamp = rospy.Time.now()
+                            for i in range(len(approaching_poses)):
+                                ap_aux = Pose()
+                                ap_aux.position.x = approaching_poses[i][0]
+                                ap_aux.position.y = approaching_poses[i][1]
+                                ap_aux.position.z = 0.1
+
+                                quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[i][2])
+
+                                ap_aux.orientation.x = quaternion[0]
+                                ap_aux.orientation.y = quaternion[1]
+                                ap_aux.orientation.z = quaternion[2]
+                                ap_aux.orientation.w = quaternion[3]
+
+                                ap_pub.poses.append(ap_aux)
+
+                            self.pubap.publish(ap_pub)
+
                             # Verify if there are approaching zones. If yes, ensure they are of appropriate size. Choose the nearest that fulfills this condition.
                             if approaching_zones:
 
@@ -254,6 +275,9 @@ class ApproachingPose():
                                     rospy.loginfo("Impossible to approach group due to insufficient space.")
                                 else:
                                     goal_pose = approaching_poses[idx][0:2]
+                                    goal_pose = list(goal_pose)
+                                    goal_pose[0] += 1*group["velocity"][0]
+                                    goal_pose[1] += 1*group["velocity"][1]
                                     goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
                                     try:
                                         result = movebase_client(goal_pose, goal_quaternion)
@@ -297,7 +321,8 @@ if __name__ == '__main__':
 
 #change loop conditions. Current ones don't allow constant awareness of robot position. - DONE
 #Figure out why vizzy has dificulty navigating after goal moves. Check that goal is the correct one? - DONE??
-#publish approach poses??? - TODO
-#get average velocity of people in group to adjust model. alter group model -> direction consistent with velocity, adjust variance with velocity - MOSTLY DONE, NEED TO ADAPT FORMULA
-#Adapt approach pose when moving. Change position of approach pose maybe? Make approach pose algorithm receive velocity. change messages- TODO
-#Change group model algorithm in the adaptive layer - TODO
+#publish approach poses??? - DONE
+#get average velocity of people in group to adjust model. alter group model -> direction consistent with velocity, adjust variance with velocity - DONE
+#Adapt approach pose when moving. Change position of approach pose maybe? Make approach pose algorithm receive velocity. change messages- DONE - FIND WHY VELOCITY ISN'T CONSISTENT
+#Change group model algorithm in the adaptive layer - DONE
+#Adapt the obstacle detection script to work with my new adaptation - TODO

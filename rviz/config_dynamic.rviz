@@ -5,8 +5,10 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Map2
+        - /Pose1
         - /DepthCloud1/Auto Size1
         - /PoseArray2
+        - /PoseArray3
       Splitter Ratio: 0.5
     Tree Height: 780
   - Class: rviz/Selection
@@ -570,6 +572,22 @@ Visualization Manager:
       Shaft Radius: 0.009999999776482582
       Shape: Arrow (Flat)
       Topic: /people_detections
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Arrow Length: 0.30000001192092896
+      Axes Length: 0.30000001192092896
+      Axes Radius: 0.009999999776482582
+      Class: rviz/PoseArray
+      Color: 52; 101; 164
+      Enabled: true
+      Head Length: 0.20000000298023224
+      Head Radius: 0.10000000149011612
+      Name: PoseArray
+      Shaft Length: 0.30000001192092896
+      Shaft Radius: 0.05000000074505806
+      Shape: Arrow (3D)
+      Topic: /approach_poses
       Unreliable: false
       Value: true
   Enabled: true
