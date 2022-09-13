@@ -26,6 +26,7 @@ THRESHOLD = 127
         # 127 -> cost -> definitely not in collision
         # http://wiki.ros.org/costmap_2d/hydro/inflation
 
+#Convert from the altered cost scale used in the costmap topic back to the original costmap scale
 costconvert = []
 costconvert.append(0)
 for i in range(1,99):
@@ -45,6 +46,7 @@ def euclidean_distance(x1, y1, x2, y2):
     return dist
 
 # http://nic-gamedev.blogspot.com/2011/11/using-vector-mathematics-and-bit-of.html
+#Detect if a point is inside a person/group's field of view
 def isFOV(group, point):
 
     for person in group['members']:
@@ -63,14 +65,14 @@ def isFOV(group, point):
 
 
 def approaching_area_filtering(approaching_area, costmap, group, FOVcheck):
-    """ Filters the approaching area by checking the points inside personal or group space."""
+    """ Filters the approaching area by checking the points inside personal or group space. Also checks for FOV if the bool is true"""
 
     approaching_filter = []
     approaching_zones = []
     aux_list = []
 
-    Firstbool = True
-    First = False
+    Firstbool = True #Bool that is only true on the first iteration. There are probably better methods but I couldn't see one when this was done
+    First = False #Bool to verify wrap-around in approaching zones
     
     ox = costmap.info.origin.position.x
     oy = costmap.info.origin.position.y 
@@ -101,13 +103,10 @@ def approaching_area_filtering(approaching_area, costmap, group, FOVcheck):
             approaching_zones[0] = aux_list + approaching_zones[0]
         else:
             approaching_zones.append(aux_list)
-
-    # if len(approaching_filter) < 0:
-    #     approaching_filter = []
     
     return approaching_filter, approaching_zones
 
-
+#Calculates the approaching zone
 def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos, costmap, group, pose, plotting):
     """ """
 
@@ -116,6 +115,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
     
     idx = -1
 
+    #Consecutively checks each approaching area, widening the radius until it goes over a threshold. Starts with areas within FOV and switches to non-FOV if none is found
     while idx == -1 and (approaching_radius <= pspace_radius or FOVcheck == True):
 
         approaching_area = None
@@ -161,6 +161,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
             indexes = np.argsort(approach_space)
             indexes = np.flip(indexes)
 
+            #Check if approaching zone is wide enough for the robot. Value should be adjustable.
             for i in indexes:
                 
                 if approaching_poses[i][3] > 0.8:
@@ -175,7 +176,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
 
     return approaching_filter, approaching_zones, approaching_poses, idx
 
-
+#Calculates the center of an approaching zone
 def zones_center(approaching_zones, group_pos, group_radius):
     """ """
     # https://stackoverflow.com/questions/26951544/algorithm-find-the-midpoint-of-an-arc

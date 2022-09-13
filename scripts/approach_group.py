@@ -60,11 +60,6 @@ def movebase_client(goal_pose, goal_quaternion):
     goal.target_pose.pose.orientation.w = goal_quaternion[3]
 
     client.send_goal(goal)
-    #wait = client.wait_for_result()
-    # if not wait:
-    #     rospy.logerr("Action server not available!")
-    #     rospy.signal_shutdown("Action server not available!")
-    # else:
     
     return client.get_result()
 
@@ -138,7 +133,8 @@ class ApproachingPose():
         for group in self.groups_data.groups:
             tmp_group = []
 
-            if len(group.people) > 1: # Only store groups, ignore individuals
+            #Groups are handled differently from individuals
+            if len(group.people) > 1: 
                 for people in group.people:
     
                     pose_x = people.position.x
@@ -213,19 +209,21 @@ class ApproachingPose():
                         (_, _, t_yaw) = convert.transformations.euler_from_quaternion(quatern)
                         self.pose = [tx, ty, t_yaw]
 
+                        # Try to find an appropriate pose and approach a group, starting from the one closest to the chosen point
                         if self.groups:
                             group_idx = np.argsort(dis)
 
-                            # Try to find an appropriate pose and approach a group, starting from the one closest to the chosen point
 
                             #rospy.loginfo("Trying group %d",group_idx[0])
 
                             map_subscriber.unregister()
 
+                            #Continuously resubscribe to the topic to update the costmap. Native software limitation.
                             map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
                         
                             group = self.groups[group_idx[0]]
 
+                            #Set a target to be used to track the chosen group to approach even if it changes position. Is used locally and in the people tracker
                             self.target = (group["pose"][0],group["pose"][1])
 
                             targetsend = PointStamped()
@@ -239,14 +237,15 @@ class ApproachingPose():
                                 g_radius = group["g_radius"]  # Margin for safer results
                                 pspace_radius = group["pspace_radius"]
                                 ospace_radius = group["ospace_radius"]
-
                             else:
                                 g_radius = 0.9
-                                p_space_radius = 1.2
+                                pspace_radius = 1.2
                                 ospace_radius = 0.45
 
+                            #Calculate approaching poses
                             approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
 
+                            #publish approaching poses
                             ap_pub = PoseArray()
                             ap_pub.header.frame_id = "/map"
                             ap_pub.header.stamp = rospy.Time.now()
@@ -267,7 +266,7 @@ class ApproachingPose():
 
                             self.pubap.publish(ap_pub)
 
-                            # Verify if there are approaching zones. If yes, ensure they are of appropriate size. Choose the nearest that fulfills this condition.
+                            # Verify if there are approaching zones
                             if approaching_zones:
 
                                 #Attempt to approach the chosen zone.
@@ -291,6 +290,7 @@ class ApproachingPose():
                             else:
                                 rospy.loginfo("Impossible to approach group due to no approach poses.") 
 
+                            #Recalculate which is the nearest group to the last one the robot tried to approach to ensure dynamic continuity
                             dis = []
                             for idx,group in enumerate(self.groups):   
                                 dis.append(euclidean_distance(group["pose"][0],group["pose"][1],self.target[0], self.target[1]))
@@ -325,4 +325,7 @@ if __name__ == '__main__':
 #get average velocity of people in group to adjust model. alter group model -> direction consistent with velocity, adjust variance with velocity - DONE
 #Adapt approach pose when moving. Change position of approach pose maybe? Make approach pose algorithm receive velocity. change messages- DONE - FIND WHY VELOCITY ISN'T CONSISTENT
 #Change group model algorithm in the adaptive layer - DONE
-#Adapt the obstacle detection script to work with my new adaptation - TODO
+#Adapt the obstacle detection script to work with my new adaptation - DONE? VERY SLOW AND NOT OPTIMAL FOR DYNAMIC - IRRELEVANT
+#Check obstacle detection algorithm. Something there is fishy - DONE, MAYBE - IRRELEVANT
+#Model change when moving is slow. Possible reason is the layer itself. Figure out solution??? - TODO
+#Arrange versions of the original algorithms with the greater errors removed so as to permit them to work and compare during experiments - TODO
