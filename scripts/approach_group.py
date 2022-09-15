@@ -272,6 +272,7 @@ class ApproachingPose():
                                 #Attempt to approach the chosen zone.
                                 if idx == -1:
                                     rospy.loginfo("Impossible to approach group due to insufficient space.")
+                                    break
                                 else:
                                     goal_pose = approaching_poses[idx][0:2]
                                     goal_pose = list(goal_pose)

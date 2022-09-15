@@ -112,7 +112,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
     """ """
 
     approaching_radius = group_radius
-    FOVcheck = True
+    FOVcheck = False
     
     idx = -1
 
@@ -162,14 +162,10 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
             indexes = np.flip(indexes)
 
             for i in indexes:
-                
-                if approaching_poses[i][3] > 0.8:
-                    if idx == -1:
-                        idx = i
-                    elif euclidean_distance(approaching_poses[i][0],approaching_poses[i][1],pose[0],pose[1]) < euclidean_distance(approaching_poses[idx][0],approaching_poses[idx][1],pose[0],pose[1]):
-                        idx = i
-                else:
-                    break
+                if idx == -1:
+                    idx = i
+                elif euclidean_distance(approaching_poses[i][0],approaching_poses[i][1],pose[0],pose[1]) < euclidean_distance(approaching_poses[idx][0],approaching_poses[idx][1],pose[0],pose[1]):
+                    idx = i
 
         approaching_radius += R_STEP
 
