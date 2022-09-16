@@ -329,4 +329,4 @@ if __name__ == '__main__':
 #Adapt the obstacle detection script to work with my new adaptation - DONE? VERY SLOW AND NOT OPTIMAL FOR DYNAMIC - IRRELEVANT
 #Check obstacle detection algorithm. Something there is fishy - DONE, MAYBE - IRRELEVANT
 #Model change when moving is slow. Possible reason is the layer itself. Figure out solution??? - TODO
-#Arrange versions of the original algorithms with the greater errors removed so as to permit them to work and compare during experiments - TODO
+#Arrange versions of the original algorithms with the greater errors removed so as to permit them to work and compare during experiments - MOSTLY DONE?

@@ -164,7 +164,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
             #Check if approaching zone is wide enough for the robot. Value should be adjustable.
             for i in indexes:
                 
-                if approaching_poses[i][3] > 0.8:
+                if approaching_poses[i][3] > 1:
                     if idx == -1:
                         idx = i
                     elif euclidean_distance(approaching_poses[i][0],approaching_poses[i][1],pose[0],pose[1]) < euclidean_distance(approaching_poses[idx][0],approaching_poses[idx][1],pose[0],pose[1]):
