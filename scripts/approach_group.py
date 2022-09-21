@@ -22,6 +22,7 @@ from plot_approach import plot_group, plot_person, draw_arrow
 # Human Body Dimensions top view in m
 HUMAN_Y = 0.45
 HUMAN_X = 0.20
+distance_adapt = 2
 
 
 def rotate(px, py, angle):
@@ -276,8 +277,14 @@ class ApproachingPose():
                                 else:
                                     goal_pose = approaching_poses[idx][0:2]
                                     goal_pose = list(goal_pose)
-                                    goal_pose[0] += 1*group["velocity"][0]
-                                    goal_pose[1] += 1*group["velocity"][1]
+                                    dist_pose = euclidean_distance(self.pose[0],self.pose[1],goal_pose[0],goal_pose[1])
+                                    if dist_pose > distance_adapt:
+                                        dist_modifier = 1
+                                    else:
+                                        dist_modifier = dist_pose/distance_adapt
+
+                                    goal_pose[0] += 1*dist_modifier*group["velocity"][0]
+                                    goal_pose[1] += 1*dist_modifier*group["velocity"][1]
                                     goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
                                     try:
                                         result = movebase_client(goal_pose, goal_quaternion)

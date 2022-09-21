@@ -280,8 +280,8 @@ class ApproachingPose():
                                 else:
                                     goal_pose = approaching_poses[idx][0:2]
                                     goal_pose = list(goal_pose)
-                                    goal_pose[0] += 1*group["velocity"][0]
-                                    goal_pose[1] += 1*group["velocity"][1]
+                                    # goal_pose[0] += 1*group["velocity"][0]
+                                    # goal_pose[1] += 1*group["velocity"][1]
                                     goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
                                     try:
                                         result = movebase_client(goal_pose, goal_quaternion)
