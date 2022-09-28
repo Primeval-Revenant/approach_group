@@ -214,89 +214,90 @@ class ApproachingPose():
                         if self.groups:
                             group_idx = np.argsort(dis)
 
-
-                            #rospy.loginfo("Trying group %d",group_idx[0])
-
-                            map_subscriber.unregister()
-
-                            #Continuously resubscribe to the topic to update the costmap. Native software limitation.
-                            map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
-                        
                             group = self.groups[group_idx[0]]
 
-                            #Set a target to be used to track the chosen group to approach even if it changes position. Is used locally and in the people tracker
-                            self.target = (group["pose"][0],group["pose"][1])
+                            if dis[group_idx[0]] < 3:    
 
-                            targetsend = PointStamped()
-                            targetsend.header.frame_id = "/map"
-                            targetsend.point.x = group["pose"][0]
-                            targetsend.point.y = group["pose"][1]
-                            self.pub.publish(targetsend)
-                            
-                            if len(group['members']) > 1:
+                                #rospy.loginfo("Trying group %d",group_idx[0])
 
-                                g_radius = group["g_radius"]  # Margin for safer results
-                                pspace_radius = group["pspace_radius"]
-                                ospace_radius = group["ospace_radius"]
-                            else:
-                                g_radius = 0.9
-                                pspace_radius = 1.2
-                                ospace_radius = 0.45
+                                map_subscriber.unregister()
 
-                            #Calculate approaching poses
-                            approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
+                                #Continuously resubscribe to the topic to update the costmap. Native software limitation.
+                                map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
 
-                            #publish approaching poses
-                            ap_pub = PoseArray()
-                            ap_pub.header.frame_id = "/map"
-                            ap_pub.header.stamp = rospy.Time.now()
-                            for i in range(len(approaching_poses)):
-                                ap_aux = Pose()
-                                ap_aux.position.x = approaching_poses[i][0]
-                                ap_aux.position.y = approaching_poses[i][1]
-                                ap_aux.position.z = 0.1
+                                #Set a target to be used to track the chosen group to approach even if it changes position. Is used locally and in the people tracker
+                                self.target = (group["pose"][0],group["pose"][1])
 
-                                quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[i][2])
+                                targetsend = PointStamped()
+                                targetsend.header.frame_id = "/map"
+                                targetsend.point.x = group["pose"][0]
+                                targetsend.point.y = group["pose"][1]
+                                self.pub.publish(targetsend)
+                                
+                                if len(group['members']) > 1:
 
-                                ap_aux.orientation.x = quaternion[0]
-                                ap_aux.orientation.y = quaternion[1]
-                                ap_aux.orientation.z = quaternion[2]
-                                ap_aux.orientation.w = quaternion[3]
-
-                                ap_pub.poses.append(ap_aux)
-
-                            self.pubap.publish(ap_pub)
-
-                            # Verify if there are approaching zones
-                            if approaching_zones:
-
-                                #Attempt to approach the chosen zone.
-                                if idx == -1:
-                                    rospy.loginfo("Impossible to approach group due to insufficient space.")
-                                    break
+                                    g_radius = group["g_radius"]  # Margin for safer results
+                                    pspace_radius = group["pspace_radius"]
+                                    ospace_radius = group["ospace_radius"]
                                 else:
-                                    goal_pose = approaching_poses[idx][0:2]
-                                    goal_pose = list(goal_pose)
-                                    dist_pose = euclidean_distance(self.pose[0],self.pose[1],goal_pose[0],goal_pose[1])
-                                    if dist_pose > distance_adapt:
-                                        dist_modifier = 1
+                                    g_radius = 0.9
+                                    pspace_radius = 1.2
+                                    ospace_radius = 0.45
+
+                                #Calculate approaching poses
+                                approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
+
+                                #publish approaching poses
+                                ap_pub = PoseArray()
+                                ap_pub.header.frame_id = "/map"
+                                ap_pub.header.stamp = rospy.Time.now()
+                                for i in range(len(approaching_poses)):
+                                    ap_aux = Pose()
+                                    ap_aux.position.x = approaching_poses[i][0]
+                                    ap_aux.position.y = approaching_poses[i][1]
+                                    ap_aux.position.z = 0.1
+
+                                    quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[i][2])
+
+                                    ap_aux.orientation.x = quaternion[0]
+                                    ap_aux.orientation.y = quaternion[1]
+                                    ap_aux.orientation.z = quaternion[2]
+                                    ap_aux.orientation.w = quaternion[3]
+
+                                    ap_pub.poses.append(ap_aux)
+
+                                self.pubap.publish(ap_pub)
+
+                                # Verify if there are approaching zones
+                                if approaching_zones:
+
+                                    #Attempt to approach the chosen zone.
+                                    if idx == -1:
+                                        rospy.loginfo("Impossible to approach group due to insufficient space.")
+                                        break
                                     else:
-                                        dist_modifier = dist_pose/distance_adapt
+                                        goal_pose = approaching_poses[idx][0:2]
+                                        goal_pose = list(goal_pose)
+                                        dist_pose = euclidean_distance(self.pose[0],self.pose[1],goal_pose[0],goal_pose[1])
+                                        if dist_pose > distance_adapt:
+                                            dist_modifier = 1
+                                        else:
+                                            dist_modifier = dist_pose/distance_adapt
 
-                                    goal_pose[0] += 1*dist_modifier*group["velocity"][0]
-                                    goal_pose[1] += 1*dist_modifier*group["velocity"][1]
-                                    goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
-                                    try:
-                                        result = movebase_client(goal_pose, goal_quaternion)
-                                        if self.moveresult:
-                                            if self.moveresult.status.status == 3:
-                                                rospy.loginfo("Goal execution done!")
-                                                break
-                                    except rospy.ROSInterruptException:
-                                        rospy.loginfo("Navigation test finished.")
+                                        goal_pose[0] += 1*dist_modifier*group["velocity"][0]
+                                        goal_pose[1] += 1*dist_modifier*group["velocity"][1]
+                                        goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
+                                        try:
+                                            result = movebase_client(goal_pose, goal_quaternion)
+                                            if self.moveresult:
+                                                if self.moveresult.status.status == 3:
+                                                    rospy.loginfo("Goal execution done!")
+                                                    break
+                                        except rospy.ROSInterruptException:
+                                            rospy.loginfo("Navigation test finished.")
 
-                            else:
-                                rospy.loginfo("Impossible to approach group due to no approach poses.") 
+                                else:
+                                    rospy.loginfo("Impossible to approach group due to no approach poses.") 
 
                             #Recalculate which is the nearest group to the last one the robot tried to approach to ensure dynamic continuity
                             dis = []
