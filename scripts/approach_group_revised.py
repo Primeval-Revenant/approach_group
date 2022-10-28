@@ -212,9 +212,11 @@ class ApproachingPose():
 
                         # Try to find an appropriate pose and approach a group, starting from the one closest to the chosen point
                         if self.groups:
+
+                            group_aux = self.groups
                             group_idx = np.argsort(dis)
 
-                            group = self.groups[group_idx[0]]
+                            group = group_aux[group_idx[0]]
 
                             if dis[group_idx[0]] < 3:    
 
@@ -245,7 +247,7 @@ class ApproachingPose():
                                     ospace_radius = 0.45
 
                                 #Calculate approaching poses
-                                approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
+                                approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radiusself.gr pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
 
                                 #publish approaching poses
                                 ap_pub = PoseArray()
@@ -288,11 +290,14 @@ class ApproachingPose():
                                         goal_pose[1] += 1*dist_modifier*group["velocity"][1]
                                         goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
                                         try:
-                                            result = movebase_client(goal_pose, goal_quaternion)
                                             if self.moveresult:
                                                 if self.moveresult.status.status == 3:
                                                     rospy.loginfo("Goal execution done!")
                                                     break
+                                                else:
+                                                    result = movebase_client(goal_pose, goal_quaternion)
+                                            else:
+                                                result = movebase_client(goal_pose, goal_quaternion)
                                         except rospy.ROSInterruptException:
                                             rospy.loginfo("Navigation test finished.")
 
@@ -301,7 +306,7 @@ class ApproachingPose():
 
                             #Recalculate which is the nearest group to the last one the robot tried to approach to ensure dynamic continuity
                             dis = []
-                            for idx,group in enumerate(self.groups):   
+                            for idx,group in enumerate(group_aux):   
                                 dis.append(euclidean_distance(group["pose"][0],group["pose"][1],self.target[0], self.target[1]))
 
                             rate2.sleep()
@@ -344,7 +349,11 @@ if __name__ == '__main__':
 #Test away from small robot on display as it confuses vizzy. - DONEISH
 #Adjust distance of individual approach. It is far too close for comfort - TODO - DOABLE LOCALLY
 #Adjust area map for new conditions as they restrict vizzy's approach too much. - DONE
-#Save group data between iterations. Innefficient but prevents crashes from sudden changes to empty groups - TODO
-#Evaluate map layer algorithm and pose finding algorithm. Cueently too slow and causing issues with Vizzy's pathing - TODO
-#Alter status verification before goal handling to prevent pathing after goal is accomnplished - TODO
+#Save group data between iterations. Innefficient but prevents crashes from sudden changes to empty groups - DONE?
+#Evaluate map layer algorithm and pose finding algorithm. Cueently too slow and causing issues with Vizzy's pathing - TODO - POSSIBLE INQUIRY PATH FOUND
+#Alter status verification before goal handling to prevent pathing after goal is accomnplished - DONE?
 #Try to figure out how OpenPose handles distance to approach farther people... again - TODO
+#Change approach pose verification to utilize purely space model instead of costmap in hopes of better performance??? - TODO - MAYBE IGNORE THIS
+#Determine why human tracking stops when move_base is engaged. Performance problems? Some kind of competition condition? - TODO
+#Refurbish code to work with costmap updates in order to eliminate constant resubscribing - TODO
+#Test various costmap update frequencies maybe - TODO
