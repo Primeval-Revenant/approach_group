@@ -8,6 +8,7 @@ import math
 import numpy as np
 
 from nav_msgs.msg import OccupancyGrid
+from map_msgs.msg import OccupancyGridUpdate
 from group_msgs.msg import People, Groups
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Pose, PoseArray, PointStamped
@@ -111,11 +112,15 @@ class ApproachingPose():
         rospy.Subscriber("/groups",Groups , self.callbackGr, queue_size=1)
         rospy.Subscriber("/clicked_point",PointStamped, self.callbackPoint, queue_size=1)
         rospy.Subscriber("/move_base/result",MoveBaseActionResult, self.callbackMoveResult, queue_size=1)
+        map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
+        map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap_updates",OccupancyGridUpdate , self.callbackCmUpdate, queue_size=10)
         self.pub = rospy.Publisher('/approach_target', PointStamped, queue_size=1)
         self.pubap = rospy.Publisher('/approach_poses', PoseArray, queue_size=1)
         self.loop_rate = rospy.Rate(rospy.get_param('~loop_rate', 10.0))
 
         self.costmap_received = False
+        self.costmap_update = None
+        self.costmap = None
         self.people_received = False
         self.groups = []
         self.pose = []
@@ -164,6 +169,21 @@ class ApproachingPose():
         """ Costmap Callback. """
         self.costmap = data
         self.costmap_received = True
+        self.costmap.data = list(self.costmap.data)
+
+    def callbackCmUpdate(self, data):
+        """ Costmap Callback. """
+        self.costmap_update = data
+        idx = 0
+        for iy in range(self.costmap_update.y, self.costmap_update.height+self.costmap_update.y):
+            for ix in range(self.costmap_update.x, self.costmap_update.width+self.costmap_update.x):
+                index = iy * self.costmap.info.width + ix
+
+                self.costmap.data[index] = self.costmap_update.data[idx]
+                idx += 1
+
+ 
+
 
     def callbackMoveResult(self,data):
         self.moveresult = data
@@ -184,7 +204,7 @@ class ApproachingPose():
 
                 self.people_received = False
 
-                map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
+                #map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
                 
                 if self.costmap_received and self.groups_data and self.point_clicked:
                     self.costmap_received = False
@@ -210,6 +230,7 @@ class ApproachingPose():
                         (_, _, t_yaw) = convert.transformations.euler_from_quaternion(quatern)
                         self.pose = [tx, ty, t_yaw]
 
+
                         # Try to find an appropriate pose and approach a group, starting from the one closest to the chosen point
                         if self.groups:
 
@@ -220,12 +241,13 @@ class ApproachingPose():
 
                             if dis[group_idx[0]] < 3:    
 
+
                                 #rospy.loginfo("Trying group %d",group_idx[0])
 
-                                map_subscriber.unregister()
+                                #map_subscriber.unregister()
 
                                 #Continuously resubscribe to the topic to update the costmap. Native software limitation.
-                                map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
+                                #map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
 
                                 #Set a target to be used to track the chosen group to approach even if it changes position. Is used locally and in the people tracker
                                 self.target = (group["pose"][0],group["pose"][1])
@@ -247,7 +269,7 @@ class ApproachingPose():
                                     ospace_radius = 0.45
 
                                 #Calculate approaching poses
-                                approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radiusself.gr pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
+                                approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
 
                                 #publish approaching poses
                                 ap_pub = PoseArray()
@@ -298,6 +320,7 @@ class ApproachingPose():
                                                     result = movebase_client(goal_pose, goal_quaternion)
                                             else:
                                                 result = movebase_client(goal_pose, goal_quaternion)
+                                            testy = 0
                                         except rospy.ROSInterruptException:
                                             rospy.loginfo("Navigation test finished.")
 
@@ -354,6 +377,6 @@ if __name__ == '__main__':
 #Alter status verification before goal handling to prevent pathing after goal is accomnplished - DONE?
 #Try to figure out how OpenPose handles distance to approach farther people... again - TODO
 #Change approach pose verification to utilize purely space model instead of costmap in hopes of better performance??? - TODO - MAYBE IGNORE THIS
-#Determine why human tracking stops when move_base is engaged. Performance problems? Some kind of competition condition? - TODO
-#Refurbish code to work with costmap updates in order to eliminate constant resubscribing - TODO
+#Determine why human tracking stops when move_base is engaged. Performance problems? Some kind of competition condition? - TODO - Might be inexistent. Resultant of loss of view.
+#Refurbish code to work with costmap updates in order to eliminate constant resubscribing - DONE - TESTING REQUIRED FOR EFFICIENCY
 #Test various costmap update frequencies maybe - TODO
