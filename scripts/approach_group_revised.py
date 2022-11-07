@@ -216,6 +216,8 @@ class ApproachingPose():
 
                     self.point_clicked = []
 
+                    approach_number = None
+
                     while not rospy.is_shutdown():
                         
                         try:
@@ -239,7 +241,7 @@ class ApproachingPose():
 
                             group = group_aux[group_idx[0]]
 
-                            if dis[group_idx[0]] < 3:    
+                            if dis[group_idx[0]] < 3 and ((not approach_number) or (len(group['members']) == approach_number)):    
 
 
                                 #rospy.loginfo("Trying group %d",group_idx[0])
@@ -257,6 +259,8 @@ class ApproachingPose():
                                 targetsend.point.x = group["pose"][0]
                                 targetsend.point.y = group["pose"][1]
                                 self.pub.publish(targetsend)
+
+                                approach_number = len(group['members'])
                                 
                                 if len(group['members']) > 1:
 
