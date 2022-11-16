@@ -50,10 +50,10 @@ def euclidean_distance(x1, y1, x2, y2):
 def isFOV(group, point):
 
     for person in group['members']:
-        diff = np.subtract(point,[person[0],person[1]])
+        diff = np.subtract(point,[person['pose'][0],person['pose'][1]])
         diff /= np.linalg.norm(diff)
 
-        facing_direct = math.cos(person[2])*diff[0]+math.sin(person[2])*diff[1]
+        facing_direct = math.cos(person['pose'][2])*diff[0]+math.sin(person['pose'][2])*diff[1]
 
         cosFOV = math.cos(((140/2)*math.pi)/180)
         
@@ -62,16 +62,19 @@ def isFOV(group, point):
 
     return True
 
-def gaussianPerson(x, y, x0, y0, A, varx, vary, skew)
+def gaussianPerson(x, y, x0, y0, varx, vary, skew):
+
+    A = 211
     dx = x-x0
     dy = y-y0
-    h = sqrt(dx*dx+dy*dy)
-    angle = atan2(dy,dx)
+    h = math.sqrt(dx*dx+dy*dy)
+    angle = math.atan2(dy,dx)
     mx = math.cos(angle-skew) * h
     my = math.sin(angle-skew) * h
-    f1 = (mx**2)/(2.0 * varx)
-    f2 = (my**2)/(2.0 * vary)
+    f1 = (mx**2)/(2.0 * varx**2)
+    f2 = (my**2)/(2.0 * vary**2)
     gauss = A * math.e**(-(f1 + f2))
+    #print([x,y,x0,y0,skew,varx,vary,gauss])
     if(gauss > 254):
         return 254
     elif (gauss < 0):
@@ -79,8 +82,44 @@ def gaussianPerson(x, y, x0, y0, A, varx, vary, skew)
     else:
         return gauss
 
+#https://stackoverflow.com/a/2007355
+def shortest_angular_distance(x,y):
+  return min(y-x, y-x+2*math.pi, y-x-2*math.pi, key=abs)
 
-def approaching_area_filtering(approaching_area, costmap, group, FOVcheck):
+def gaussianMax(group,point):
+
+    angle_point = math.atan2(point[1]-group["pose"][1],point[0]-group["pose"][0])
+    diff = shortest_angular_distance(group["pose"][2],angle_point)
+
+    if abs(diff) < math.pi/2:
+        cost = gaussianPerson(point[0],point[1],group["pose"][0],group["pose"][1],group["parameters"][0], group["parameters"][1],group["pose"][2])
+    else:
+        cost = gaussianPerson(point[0],point[1],group["pose"][0],group["pose"][1],group["parameters"][2], group["parameters"][1],group["pose"][2])
+
+    if len(group['members']) > 1:
+        for person in group["members"]:
+
+            angle_point = math.atan2(point[1]-person["pose"][1],point[0]-person["pose"][0])
+            diff = shortest_angular_distance(person["pose"][2],angle_point)
+
+            if abs(diff) < math.pi/2:
+                if diff < 0:
+                    cost_aux = gaussianPerson(point[0],point[1],person["pose"][0],person["pose"][1],person["parameters"][0], person["parameters"][3],person["pose"][2])
+                else:
+                    cost_aux = gaussianPerson(point[0],point[1],person["pose"][0],person["pose"][1],person["parameters"][0], person["parameters"][1],person["pose"][2])
+            else:
+                if diff < 0:
+                    cost_aux = gaussianPerson(point[0],point[1],person["pose"][0],person["pose"][1],person["parameters"][2], person["parameters"][3],person["pose"][2])
+                else:
+                    cost_aux = gaussianPerson(point[0],point[1],person["pose"][0],person["pose"][1],person["parameters"][2], person["parameters"][1],person["pose"][2])
+
+            if cost < cost_aux:
+                cost = cost_aux
+
+    return cost
+
+
+def approaching_area_filtering(approaching_area, costmap, group, FOVcheck, distance_robot):
     """ Filters the approaching area by checking the points inside personal or group space. Also checks for FOV if the bool is true"""
 
     approaching_filter = []
@@ -90,17 +129,23 @@ def approaching_area_filtering(approaching_area, costmap, group, FOVcheck):
     Firstbool = True #Bool that is only true on the first iteration. There are probably better methods but I couldn't see one when this was done
     First = False #Bool to verify wrap-around in approaching zones
     
-    ox = costmap.info.origin.position.x
-    oy = costmap.info.origin.position.y 
-    resolution = costmap.info.resolution
-
     for x, y in zip(approaching_area[0], approaching_area[1]):
-        ix = int((x - (resolution/2) - ox) / resolution)
-        iy = int((y - (resolution/2) - oy) / resolution)
-        index = iy * costmap.info.width + ix
-        cost = costmap.data[index]
 
-        if (costconvert[cost] <= THRESHOLD and costconvert[cost] != 255) and (not FOVcheck or (FOVcheck and isFOV(group,[x,y]))): #
+        if distance_robot > 3:
+            cost = gaussianMax(group,[x,y])
+        else:
+            
+            ox = costmap.info.origin.position.x
+            oy = costmap.info.origin.position.y 
+            resolution = costmap.info.resolution
+
+            ix = int((x - (resolution/2) - ox) / resolution)
+            iy = int((y - (resolution/2) - oy) / resolution)
+            index = iy * costmap.info.width + ix
+            cost = costmap.data[index]
+            cost = costconvert[cost]
+
+        if (cost <= THRESHOLD and cost != 255) and (not FOVcheck or (FOVcheck and isFOV(group,[x,y]))): #
 
             approaching_filter.append((x, y))
             aux_list.append((x, y))
@@ -131,6 +176,8 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
     
     idx = -1
 
+    distance_robot = euclidean_distance(pose[0],pose[1],group_pos[0], group_pos[1])
+
     #Consecutively checks each approaching area, widening the radius until it goes over a threshold. Starts with areas within FOV and switches to non-FOV if none is found
     while idx == -1 and (approaching_radius <= pspace_radius or FOVcheck == True):
 
@@ -146,7 +193,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
         approaching_area = plot_ellipse(
             semimaj=approaching_radius, semimin=approaching_radius, x_cent=group_pos[0], y_cent=group_pos[1], data_out=True)
         approaching_filter, approaching_zones = approaching_area_filtering(
-            approaching_area, costmap, group, FOVcheck)
+            approaching_area, costmap, group, FOVcheck, distance_robot)
 
         if approaching_filter:
             center_x, center_y, orientation, approach_space = zones_center(
@@ -160,7 +207,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
                 ax = fig.add_subplot(1, 1, 1)
                 plot_kwargs = {'color': 'g', 'linestyle': '-', 'linewidth': 0.8}
                 for person in group["members"]:
-                    plot_person(person[0], person[1], person[2], ax, plot_kwargs)
+                    plot_person(person["pose"][0], person["pose"][1], person["pose"][2], ax, plot_kwargs)
 
                 _ = plot_group(group["pose"], group_radius, pspace_radius, ospace_radius, ax)
 
@@ -179,7 +226,6 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
 
             #Check if approaching zone is wide enough for the robot. Value should be adjustable.
             for i in indexes:
-                
                 if approaching_poses[i][3] > 1:
                     if idx == -1:
                         idx = i

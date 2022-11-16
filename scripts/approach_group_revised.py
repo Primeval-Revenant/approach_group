@@ -17,7 +17,7 @@ from ellipse import plot_ellipse
 from sys import getsizeof, argv
 import matplotlib.pyplot as plt
 
-from approaching_pose import approaching_area_filtering, approaching_heuristic, zones_center
+from approaching_pose_revised import approaching_area_filtering, approaching_heuristic, zones_center
 from plot_approach import plot_group, plot_person, draw_arrow
 # CONSTANTS
 # Human Body Dimensions top view in m
@@ -76,8 +76,8 @@ def group_radius(persons, group_pose):
     for person in persons:
         
         # average of the distance between the group members and the center of the group, o-space radius
-        distance = euclidean_distance(person[0],
-                                      person[1], group_pose[0], group_pose[1])
+        distance = euclidean_distance(person["pose"][0],
+                                      person["pose"][1], group_pose[0], group_pose[1])
         sum_radius += distance
 
         if ospace_radius == 0:
@@ -153,13 +153,13 @@ class ApproachingPose():
                         # pspace_radius  Based on the closest person to the group center
                         # ospace_radius Based on the farthest persons to the group center
                         g_radius, pspace_radius, ospace_radius = group_radius(tmp_group, [pose_x, pose_y,pose_yaw])
-                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius, 'velocity': [people.velocity.linear.x, people.velocity.linear.y]})
+                        self.groups.append({'members': tmp_group,'pose':[pose_x, pose_y,pose_yaw], 'parameters' :[people.sx, people.sy, people.sx_back], 'g_radius': g_radius, 'ospace_radius': ospace_radius, 'pspace_radius': pspace_radius, 'velocity': [people.velocity.linear.x, people.velocity.linear.y]})
                     else:
-                        tmp_group.append([pose_x, pose_y, pose_yaw])
+                        tmp_group.append({'pose':[pose_x, pose_y, pose_yaw], 'parameters':[people.sx, people.sy, people.sx_back, people.sy_right]})
             else:
                 for people in group.people:
                     tmp_group.append([people.position.x, people.position.y, people.orientation])
-                    self.groups.append({'members': tmp_group, 'pose': [people.position.x, people.position.y, people.orientation],'parameters' :[people.sx, people.sy], 'velocity': [people.velocity.linear.x, people.velocity.linear.y]})
+                    self.groups.append({'members': tmp_group, 'pose': [people.position.x, people.position.y, people.orientation],'parameters' :[people.sx, people.sy, people.sx_back], 'velocity': [people.velocity.linear.x, people.velocity.linear.y]})
      
     def callbackPoint(self,data):
         self.point_clicked = data
@@ -380,7 +380,10 @@ if __name__ == '__main__':
 #Evaluate map layer algorithm and pose finding algorithm. Cueently too slow and causing issues with Vizzy's pathing - TODO - POSSIBLE INQUIRY PATH FOUND
 #Alter status verification before goal handling to prevent pathing after goal is accomnplished - DONE?
 #Try to figure out how OpenPose handles distance to approach farther people... again - TODO
-#Change approach pose verification to utilize purely space model instead of costmap in hopes of better performance??? - TODO - MAYBE IGNORE THIS
+#Change approach pose verification to utilize purely space model instead of costmap in hopes of better performance??? - DONEISH - MAYBE IGNORE THIS
 #Determine why human tracking stops when move_base is engaged. Performance problems? Some kind of competition condition? - TODO - Might be inexistent. Resultant of loss of view.
 #Refurbish code to work with costmap updates in order to eliminate constant resubscribing - DONE - TESTING REQUIRED FOR EFFICIENCY
 #Test various costmap update frequencies maybe - TODO
+#Try 960x720 while keeping same OpenPose resolution I gues... - DONEISH - probably unncessary
+#Global costmap unstrustworthy for approach pose calculation. Set it up to utilize only space model unless close enough for local costmap - DONE?
+#Figure out what was done for costmap calculation in cpp, as the numbers are simply not coinciding with the correct ones
