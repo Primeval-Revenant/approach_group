@@ -387,3 +387,6 @@ if __name__ == '__main__':
 #Try 960x720 while keeping same OpenPose resolution I gues... - DONEISH - probably unncessary
 #Global costmap unstrustworthy for approach pose calculation. Set it up to utilize only space model unless close enough for local costmap - DONE?
 #Figure out what was done for costmap calculation in cpp, as the numbers are simply not coinciding with the correct ones
+#Miscalculation in new approaching_pose. Rewrite with model limitation by variance. Read adaptive_layer.cpp - TODO
+#Consider changing all values above 127 in the costmap directly to 233? in order to allow for more sane amplitude numbers. - TODO
+#Check if boundaries are correct? - TODO
