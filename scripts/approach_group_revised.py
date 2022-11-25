@@ -158,7 +158,7 @@ class ApproachingPose():
                         tmp_group.append({'pose':[pose_x, pose_y, pose_yaw], 'parameters':[people.sx, people.sy, people.sx_back, people.sy_right]})
             else:
                 for people in group.people:
-                    tmp_group.append([people.position.x, people.position.y, people.orientation])
+                    tmp_group.append({'pose':[people.position.x, people.position.y, people.orientation], 'parameters':[people.sx, people.sy, people.sx_back, people.sy_right]})
                     self.groups.append({'members': tmp_group, 'pose': [people.position.x, people.position.y, people.orientation],'parameters' :[people.sx, people.sy, people.sx_back], 'velocity': [people.velocity.linear.x, people.velocity.linear.y]})
      
     def callbackPoint(self,data):
