@@ -203,8 +203,6 @@ class ApproachingPose():
             if self.people_received and self.groups_data and self.point_clicked:
 
                 self.people_received = False
-
-                #map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
                 
                 if self.costmap_received and self.groups_data and self.point_clicked:
                     self.costmap_received = False
@@ -243,14 +241,6 @@ class ApproachingPose():
 
                             if dis[group_idx[0]] < 3 and ((not approach_number) or (len(group['members']) == approach_number)):    
 
-
-                                #rospy.loginfo("Trying group %d",group_idx[0])
-
-                                #map_subscriber.unregister()
-
-                                #Continuously resubscribe to the topic to update the costmap. Native software limitation.
-                                #map_subscriber = rospy.Subscriber("/move_base/global_costmap/costmap",OccupancyGrid , self.callbackCm, queue_size=1)
-
                                 #Set a target to be used to track the chosen group to approach even if it changes position. Is used locally and in the people tracker
                                 self.target = (group["pose"][0],group["pose"][1])
 
@@ -268,8 +258,8 @@ class ApproachingPose():
                                     pspace_radius = group["pspace_radius"]
                                     ospace_radius = group["ospace_radius"]
                                 else:
-                                    g_radius = 0.9
-                                    pspace_radius = 1.2
+                                    g_radius = 1.2
+                                    pspace_radius = 1.4
                                     ospace_radius = 0.45
 
                                 #Calculate approaching poses
@@ -300,10 +290,11 @@ class ApproachingPose():
                                 if approaching_zones:
 
                                     #Attempt to approach the chosen zone.
-                                    if idx == -1:
-                                        rospy.loginfo("Impossible to approach group due to insufficient space.")
-                                        break
-                                    else:
+                                    # if idx == -1:
+                                    #     rospy.loginfo("Impossible to approach group due to insufficient space.")
+                                    #     break
+                                    # else:
+                                    if idx != -1:
                                         goal_pose = approaching_poses[idx][0:2]
                                         goal_pose = list(goal_pose)
                                         dist_pose = euclidean_distance(self.pose[0],self.pose[1],goal_pose[0],goal_pose[1])
@@ -346,47 +337,3 @@ if __name__ == '__main__':
     if len(argv) > 1 and argv[1] == 'print':
         approaching_pose.plotting = True
     approaching_pose.run_behavior()
-
-
-#Setup id - TODO
-#Setup node to transfer info between publisher and approach - DONE
-#Deal with groups and individuals - DONE
-#Prepare to test unregistering the costmap subscriber - best case scenario, it updates. - TEST MORE
-#Dynamic move orders - Just remove wait result and rewrite the client function - DONE
-#Setup result positive as a stop condition? Prevent future infinite loop problems? - DONE
-#Figure out how else to apply ids - TODO
-
-
-#add center detection to approach target in people_publisher - DONE
-#iterate group center as clicked point to always keep awareness of which group to approach even if they move - DONE
-
-#change loop conditions. Current ones don't allow constant awareness of robot position. - DONE
-#Figure out why vizzy has dificulty navigating after goal moves. Check that goal is the correct one? - DONE??
-#publish approach poses??? - DONE
-#get average velocity of people in group to adjust model. alter group model -> direction consistent with velocity, adjust variance with velocity - DONE
-#Adapt approach pose when moving. Change position of approach pose maybe? Make approach pose algorithm receive velocity. change messages- DONE - FIND WHY VELOCITY ISN'T CONSISTENT
-#Change group model algorithm in the adaptive layer - DONE
-#Adapt the obstacle detection script to work with my new adaptation - DONE? VERY SLOW AND NOT OPTIMAL FOR DYNAMIC - IRRELEVANT
-#Check obstacle detection algorithm. Something there is fishy - DONE, MAYBE - IRRELEVANT
-#Model change when moving is slow. Possible reason is the layer itself. Figure out solution??? - TODO
-#Arrange versions of the original algorithms with the greater errors removed so as to permit them to work and compare during experiments - MOSTLY DONE?
-
-
-#Find way for Vizzy to still approach even when it loses sight of person. Maintain position when sight is lost? Stop changing approach pose when it is close? - TODO
-#Test away from small robot on display as it confuses vizzy. - DONEISH
-#Adjust distance of individual approach. It is far too close for comfort - TODO - DOABLE LOCALLY
-#Adjust area map for new conditions as they restrict vizzy's approach too much. - DONE
-#Save group data between iterations. Innefficient but prevents crashes from sudden changes to empty groups - DONE?
-#Evaluate map layer algorithm and pose finding algorithm. Cueently too slow and causing issues with Vizzy's pathing - TODO - POSSIBLE INQUIRY PATH FOUND
-#Alter status verification before goal handling to prevent pathing after goal is accomnplished - DONE?
-#Try to figure out how OpenPose handles distance to approach farther people... again - TODO
-#Change approach pose verification to utilize purely space model instead of costmap in hopes of better performance??? - DONEISH - MAYBE IGNORE THIS
-#Determine why human tracking stops when move_base is engaged. Performance problems? Some kind of competition condition? - TODO - Might be inexistent. Resultant of loss of view.
-#Refurbish code to work with costmap updates in order to eliminate constant resubscribing - DONE - TESTING REQUIRED FOR EFFICIENCY
-#Test various costmap update frequencies maybe - TODO
-#Try 960x720 while keeping same OpenPose resolution I gues... - DONEISH - probably unncessary
-#Global costmap unstrustworthy for approach pose calculation. Set it up to utilize only space model unless close enough for local costmap - DONE?
-#Figure out what was done for costmap calculation in cpp, as the numbers are simply not coinciding with the correct ones
-#Miscalculation in new approaching_pose. Rewrite with model limitation by variance. Read adaptive_layer.cpp - TODO
-#Consider changing all values above 127 in the costmap directly to 233? in order to allow for more sane amplitude numbers. - TODO
-#Check if boundaries are correct? - TODO

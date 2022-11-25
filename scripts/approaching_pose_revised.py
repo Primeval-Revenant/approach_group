@@ -74,7 +74,7 @@ def gaussianPerson(x, y, x0, y0, varx, vary, skew):
     f1 = (mx**2)/(2.0 * varx**2)
     f2 = (my**2)/(2.0 * vary**2)
     gauss = A * math.e**(-(f1 + f2))
-    #print([x,y,x0,y0,skew,varx,vary,gauss])
+
     if(gauss > 254):
         return 254
     elif (gauss < 0):
@@ -173,8 +173,13 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
 
     approaching_radius = group_radius
     FOVcheck = True
+    approach_counter = 0
+    approach_max = 0
+    approach_aux = None
     
     idx = -1
+    idx_aux = -1
+    idx_aux2 = -1
 
     distance_robot = euclidean_distance(pose[0],pose[1],group_pos[0], group_pos[1])
 
@@ -223,16 +228,26 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
 
             indexes = np.argsort(approach_space)
             indexes = np.flip(indexes)
-
             #Check if approaching zone is wide enough for the robot. Value should be adjustable.
             for i in indexes:
-                if approaching_poses[i][3] > 1:
-                    if idx == -1:
-                        idx = i
+                if approaching_poses[i][3] > 0.95:
+                    approach_counter += 1
+                    if idx_aux == -1:
+                        idx_aux = i
                     elif euclidean_distance(approaching_poses[i][0],approaching_poses[i][1],pose[0],pose[1]) < euclidean_distance(approaching_poses[idx][0],approaching_poses[idx][1],pose[0],pose[1]):
-                        idx = i
+                        idx_aux = i
                 else:
                     break
+
+            if approach_counter > approach_max:
+                approach_max = approach_counter
+                approach_aux = approaching_poses
+                idx_aux2 = idx_aux
+            approach_counter = 0
+
+            if approaching_radius <= pspace_radius and idx_aux2 != -1:
+                idx = idx_aux2
+                approaching_poses = approach_aux
 
         approaching_radius += R_STEP
 

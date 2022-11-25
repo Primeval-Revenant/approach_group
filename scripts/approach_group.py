@@ -315,36 +315,3 @@ if __name__ == '__main__':
         approaching_pose.plotting = True
     approaching_pose.run_behavior()
 
-
-#Setup id - TODO
-#Setup node to transfer info between publisher and approach - DONE
-#Deal with groups and individuals - DONE
-#Prepare to test unregistering the costmap subscriber - best case scenario, it updates. - TEST MORE
-#Dynamic move orders - Just remove wait result and rewrite the client function - DONE
-#Setup result positive as a stop condition? Prevent future infinite loop problems? - DONE
-#Figure out how else to apply ids - TODO
-
-
-#add center detection to approach target in people_publisher - DONE
-#iterate group center as clicked point to always keep awareness of which group to approach even if they move - DONE
-
-#change loop conditions. Current ones don't allow constant awareness of robot position. - DONE
-#Figure out why vizzy has dificulty navigating after goal moves. Check that goal is the correct one? - DONE??
-#publish approach poses??? - DONE
-#get average velocity of people in group to adjust model. alter group model -> direction consistent with velocity, adjust variance with velocity - DONE
-#Adapt approach pose when moving. Change position of approach pose maybe? Make approach pose algorithm receive velocity. change messages- DONE - FIND WHY VELOCITY ISN'T CONSISTENT
-#Change group model algorithm in the adaptive layer - DONE
-#Adapt the obstacle detection script to work with my new adaptation - DONE? VERY SLOW AND NOT OPTIMAL FOR DYNAMIC - IRRELEVANT
-#Check obstacle detection algorithm. Something there is fishy - DONE, MAYBE - IRRELEVANT
-#Model change when moving is slow. Possible reason is the layer itself. Figure out solution??? - TODO
-#Arrange versions of the original algorithms with the greater errors removed so as to permit them to work and compare during experiments - MOSTLY DONE?
-
-
-#Find way for Vizzy to still approach even when it loses sight of person. Maintain position when sight is lost? Stop changing approach pose when it is close? - TODO
-#Test away from small robot on display as it confuses vizzy. - DONEISH
-#Adjust distance of individual approach. It is far too close for comfort - TODO - DOABLE LOCALLY
-#Adjust area map for new conditions as they restrict vizzy's approach too much. - DONE
-#Save group data between iterations. Innefficient but prevents crashes from sudden changes to empty groups - TODO
-#Evaluate map layer algorithm and pose finding algorithm. Cueently too slow and causing issues with Vizzy's pathing - TODO
-#Alter status verification before goal handling to prevent pathing after goal is accomnplished - TODO
-#Try to figure out how OpenPose handles distance to approach farther people... again - TODO
