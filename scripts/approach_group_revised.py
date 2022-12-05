@@ -174,13 +174,14 @@ class ApproachingPose():
     def callbackCmUpdate(self, data):
         """ Costmap Callback. """
         self.costmap_update = data
-        idx = 0
-        for iy in range(self.costmap_update.y, self.costmap_update.height+self.costmap_update.y):
-            for ix in range(self.costmap_update.x, self.costmap_update.width+self.costmap_update.x):
-                index = iy * self.costmap.info.width + ix
+        if self.costmap:
+            idx = 0
+            for iy in range(self.costmap_update.y, self.costmap_update.height+self.costmap_update.y):
+                for ix in range(self.costmap_update.x, self.costmap_update.width+self.costmap_update.x):
+                    index = iy * self.costmap.info.width + ix
 
-                self.costmap.data[index] = self.costmap_update.data[idx]
-                idx += 1
+                    self.costmap.data[index] = self.costmap_update.data[idx]
+                    idx += 1
 
  
 
@@ -215,6 +216,7 @@ class ApproachingPose():
                     self.point_clicked = []
 
                     approach_number = None
+                    goal_pose = None
 
                     while not rospy.is_shutdown():
                         
@@ -253,7 +255,6 @@ class ApproachingPose():
                                 approach_number = len(group['members'])
                                 
                                 if len(group['members']) > 1:
-
                                     g_radius = group["g_radius"]  # Margin for safer results
                                     pspace_radius = group["pspace_radius"]
                                     ospace_radius = group["ospace_radius"]
@@ -294,7 +295,7 @@ class ApproachingPose():
                                     #     rospy.loginfo("Impossible to approach group due to insufficient space.")
                                     #     break
                                     # else:
-                                    if idx != -1:
+                                    if idx != -1 and (not goal_pose or euclidean_distance(goal_pose[0], goal_pose[1], approaching_poses[idx][0], approaching_poses[idx][1]) > 0.1):
                                         goal_pose = approaching_poses[idx][0:2]
                                         goal_pose = list(goal_pose)
                                         dist_pose = euclidean_distance(self.pose[0],self.pose[1],goal_pose[0],goal_pose[1])
