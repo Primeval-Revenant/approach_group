@@ -42,6 +42,9 @@ def euclidean_distance(x1, y1, x2, y2):
     dist = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     return dist
 
+def shortest_angular_distance(x,y):
+    return min(y-x, y-x+2*math.pi, y-x-2*math.pi, key=abs)
+
 
 def movebase_client(goal_pose, goal_quaternion):
     """
@@ -259,7 +262,7 @@ class ApproachingPose():
                                     pspace_radius = group["pspace_radius"]
                                     ospace_radius = group["ospace_radius"]
                                 else:
-                                    g_radius = 1.2
+                                    g_radius = 1.3
                                     pspace_radius = 1.4
                                     ospace_radius = 0.45
 
