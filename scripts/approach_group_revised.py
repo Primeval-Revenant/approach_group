@@ -262,8 +262,8 @@ class ApproachingPose():
                                     pspace_radius = group["pspace_radius"]
                                     ospace_radius = group["ospace_radius"]
                                 else:
-                                    g_radius = 1.3
-                                    pspace_radius = 1.4
+                                    g_radius = 0.9
+                                    pspace_radius = 1.2
                                     ospace_radius = 0.45
 
                                 #Calculate approaching poses
