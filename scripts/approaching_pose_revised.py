@@ -180,6 +180,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
     idx = -1
     idx_aux = -1
     idx_aux2 = -1
+    approaching_radius_aux = 0
 
     distance_robot = euclidean_distance(pose[0],pose[1],group_pos[0], group_pos[1])
 
@@ -238,18 +239,22 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
                         idx_aux = i
                 else:
                     break
-
-            if approach_counter > approach_max:
-                approach_max = approach_counter
-                approach_aux = approaching_poses
-                idx_aux2 = idx_aux
+            
+            if len(group["members"]) != 1:
+                if approach_counter > approach_max:
+                    approach_max = approach_counter
+                    approach_aux = approaching_poses
+                    idx_aux2 = idx_aux
+                    approaching_radius_aux = approaching_radius
+            else:
+                idx = idx_aux
             approach_counter = 0
 
-            if approaching_radius <= pspace_radius and idx_aux2 != -1:
-                idx = idx_aux2
-                approaching_poses = approach_aux
-
         approaching_radius += R_STEP
+
+        if approaching_radius >= pspace_radius and idx_aux2 != -1:
+            idx = idx_aux2
+            approaching_poses = approach_aux
 
     return approaching_filter, approaching_zones, approaching_poses, idx
 
