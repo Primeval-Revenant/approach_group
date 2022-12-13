@@ -26,7 +26,7 @@ THRESHOLD = 127
         # 127 -> cost -> definitely not in collision
         # http://wiki.ros.org/costmap_2d/hydro/inflation
 
-MIN_DISTANCE_THRESHOLD = 0.95
+MIN_DISTANCE_THRESHOLD = 0
 
 #Convert from the altered cost scale used in the costmap topic back to the original costmap scale
 costconvert = []
@@ -174,7 +174,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
     """ """
 
     approaching_radius = group_radius
-    FOVcheck = True
+    FOVcheck = False
     approach_counter = 0
     approach_max = 0
     approach_aux = None
