@@ -23,7 +23,7 @@ from plot_approach import plot_group, plot_person, draw_arrow
 # Human Body Dimensions top view in m
 HUMAN_Y = 0.45
 HUMAN_X = 0.20
-DISTANCE_ADAPT = 3
+DISTANCE_ADAPT = 2
 VEL_ADAPT_FACTOR = 0
 
 
@@ -67,7 +67,12 @@ def movebase_client(goal_pose, goal_quaternion):
 
     client.send_goal(goal)
     
-    return client.get_result()
+    wait = client.wait_for_result()
+    if not wait:
+        rospy.logerr("Action server not available!")
+        rospy.signal_shutdown("Action server not available!")
+    else:
+        return client.get_result()
 
 
 def group_radius(persons, group_pose):

@@ -22,7 +22,7 @@ from plot_approach import plot_group, plot_person, draw_arrow
 R_STEP = 0.01
 
 # Thresold
-THRESHOLD = 127
+THRESHOLD = 0
         # 127 -> cost -> definitely not in collision
         # http://wiki.ros.org/costmap_2d/hydro/inflation
 

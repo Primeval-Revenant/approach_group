@@ -17,14 +17,15 @@ from ellipse import plot_ellipse
 from sys import getsizeof, argv
 import matplotlib.pyplot as plt
 
-from approaching_pose_revised_nonadaptive import approaching_area_filtering, approaching_heuristic, zones_center
+from approaching_pose_revised import approaching_area_filtering, approaching_heuristic, zones_center
 from plot_approach import plot_group, plot_person, draw_arrow
 # CONSTANTS
 # Human Body Dimensions top view in m
 HUMAN_Y = 0.45
 HUMAN_X = 0.20
 DISTANCE_ADAPT = 3
-VEL_ADAPT_FACTOR = 0
+ADAPT_LIMIT = 0.5
+VEL_ADAPT_FACTOR = 5
 
 
 def rotate(px, py, angle):
@@ -67,7 +68,11 @@ def movebase_client(goal_pose, goal_quaternion):
 
     client.send_goal(goal)
     
-    return client.get_result()
+    if not wait:
+        rospy.logerr("Action server not available!")
+        rospy.signal_shutdown("Action server not available!")
+    else:
+        return client.get_result()
 
 
 def group_radius(persons, group_pose):
@@ -292,7 +297,7 @@ class ApproachingPose():
                                 self.pubap.publish(ap_pub)
 
                                 # Verify if there are approaching zones
-                                if approaching_zones:
+                                if approaching_poses:
 
                                     #Attempt to approach the chosen zone.
                                     # if idx == -1:
@@ -308,8 +313,18 @@ class ApproachingPose():
                                         else:
                                             dist_modifier = dist_pose/DISTANCE_ADAPT
 
-                                        goal_pose[0] += VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][0]
-                                        goal_pose[1] += VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][1]
+                                        x_adapt = VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][0]
+                                        y_adapt = VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][1]
+
+                                        adapt_magnitude = np.linalg.norm([x_adapt,y_adapt])
+
+                                        if adapt_magnitude < ADAPT_LIMIT:
+                                            goal_pose[0] += x_adapt
+                                            goal_pose[1] += y_adapt
+                                        else:
+                                            goal_pose[0] = ADAPT_LIMIT*(x_adapt/adapt_magnitude)
+                                            goal_pose[1] = ADAPT_LIMIT*(y_adapt/adapt_magnitude)
+
                                         goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
                                         try:
                                             if self.moveresult:

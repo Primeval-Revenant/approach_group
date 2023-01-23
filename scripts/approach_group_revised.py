@@ -25,6 +25,7 @@ HUMAN_Y = 0.45
 HUMAN_X = 0.20
 DISTANCE_ADAPT = 3
 ADAPT_LIMIT = 0.5
+VEL_ADAPT_FACTOR = 7
 
 
 def rotate(px, py, angle):
@@ -292,7 +293,7 @@ class ApproachingPose():
                                 self.pubap.publish(ap_pub)
 
                                 # Verify if there are approaching zones
-                                if approaching_zones:
+                                if approaching_poses:
 
                                     #Attempt to approach the chosen zone.
                                     # if idx == -1:
@@ -308,8 +309,8 @@ class ApproachingPose():
                                         else:
                                             dist_modifier = dist_pose/DISTANCE_ADAPT
 
-                                        x_adapt = 5*dist_modifier*group["velocity"][0]
-                                        y_adapt = 5*dist_modifier*group["velocity"][1]
+                                        x_adapt = VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][0]
+                                        y_adapt = VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][1]
 
                                         adapt_magnitude = np.linalg.norm([x_adapt,y_adapt])
 
