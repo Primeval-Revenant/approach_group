@@ -22,7 +22,7 @@ from plot_approach import plot_group, plot_person, draw_arrow
 R_STEP = 0.01
 
 # Thresold
-THRESHOLD = 0
+THRESHOLD = 127
         # 127 -> cost -> definitely not in collision
         # http://wiki.ros.org/costmap_2d/hydro/inflation
 
@@ -234,29 +234,29 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
             #Check if approaching zone is wide enough for the robot. Value should be adjustable.
             for i in indexes:
                 if approaching_poses[i][3] > MIN_DISTANCE_THRESHOLD:
-                    approach_counter += 1
-                    if idx_aux == -1:
-                        idx_aux = i
+                    # approach_counter += 1
+                    if idx == -1:
+                        idx = i
                     elif euclidean_distance(approaching_poses[i][0],approaching_poses[i][1],pose[0],pose[1]) < euclidean_distance(approaching_poses[idx][0],approaching_poses[idx][1],pose[0],pose[1]):
-                        idx_aux = i
+                        idx = i
                 else:
                     break
             
-            if len(group["members"]) != 1:
-                if approach_counter > approach_max:
-                    approach_max = approach_counter
-                    approach_aux = approaching_poses
-                    idx_aux2 = idx_aux
-                    approaching_radius_aux = approaching_radius
-            else:
-                idx = idx_aux
-            approach_counter = 0
+            # """ if len(group["members"]) != 1:
+            #     if approach_counter > approach_max:
+            #         approach_max = approach_counter
+            #         approach_aux = approaching_poses
+            #         idx_aux2 = idx_aux
+            #         approaching_radius_aux = approaching_radius
+            # else:
+            #     idx = idx_aux
+            # approach_counter = 0 """
 
         approaching_radius += R_STEP
 
-        if approaching_radius >= pspace_radius and idx_aux2 != -1:
-            idx = idx_aux2
-            approaching_poses = approach_aux
+        #if approaching_radius >= pspace_radius and idx_aux2 != -1:
+        #    idx = idx_aux2
+        #    approaching_poses = approach_aux
 
     return approaching_filter, approaching_zones, approaching_poses, idx
 

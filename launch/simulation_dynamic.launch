@@ -56,7 +56,7 @@
 
   <!-- Control modules -->
   <!--node pkg="approach_group" type="control_person_1.py" name="control_person_1"/-->
-  <node pkg="approach_group" type="control_person_2.py" name="control_person_2"/>
+  <!--node pkg="approach_group" type="control_person_2.py" name="control_person_2"/-->
   <node pkg="approach_group" type="control_person_3.py" name="control_person_3"/>
 
 
@@ -65,9 +65,9 @@
     name="gcloud_tts" output="screen">
   </node>
 
-  <node pkg="adaptive_social_layers" type="people_publisher.py" name="people_publisher"/>
+  <!--node pkg="adaptive_social_layers" type="people_publisher.py" name="people_publisher"/-->
 
   <!-- Approach group noder -->
-  <node pkg="approach_group" type="approach_group_revised.py" name="approach_group"/>
+  <!--node pkg="approach_group" type="approach_group_revised.py" name="approach_group"/-->
 
 </launch>

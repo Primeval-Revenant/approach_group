@@ -25,7 +25,7 @@ HUMAN_Y = 0.45
 HUMAN_X = 0.20
 DISTANCE_ADAPT = 3
 ADAPT_LIMIT = 0.5
-VEL_ADAPT_FACTOR = 5
+VEL_ADAPT_FACTOR = 0
 
 
 def rotate(px, py, angle):
@@ -68,6 +68,7 @@ def movebase_client(goal_pose, goal_quaternion):
 
     client.send_goal(goal)
     
+    wait = client.wait_for_result()
     if not wait:
         rospy.logerr("Action server not available!")
         rospy.signal_shutdown("Action server not available!")

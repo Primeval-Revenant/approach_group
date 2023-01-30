@@ -17,14 +17,15 @@ from ellipse import plot_ellipse
 from sys import getsizeof, argv
 import matplotlib.pyplot as plt
 
-from approaching_pose_revised_nonadaptive import approaching_area_filtering, approaching_heuristic, zones_center
+from approaching_pose_revised_dynamic import approaching_area_filtering, approaching_heuristic, zones_center
 from plot_approach import plot_group, plot_person, draw_arrow
 # CONSTANTS
 # Human Body Dimensions top view in m
 HUMAN_Y = 0.45
 HUMAN_X = 0.20
-DISTANCE_ADAPT = 2
-VEL_ADAPT_FACTOR = 0
+DISTANCE_ADAPT = 6
+ADAPT_LIMIT = 1
+VEL_ADAPT_FACTOR = 7
 
 
 def rotate(px, py, angle):
@@ -67,12 +68,7 @@ def movebase_client(goal_pose, goal_quaternion):
 
     client.send_goal(goal)
     
-    wait = client.wait_for_result()
-    if not wait:
-        rospy.logerr("Action server not available!")
-        rospy.signal_shutdown("Action server not available!")
-    else:
-        return client.get_result()
+    return client.get_result()
 
 
 def group_radius(persons, group_pose):
@@ -262,14 +258,24 @@ class ApproachingPose():
                                 self.pub.publish(targetsend)
 
                                 approach_number = len(group['members'])
+
+                                dist_pose = euclidean_distance(self.pose[0],self.pose[1],group["pose"][0],group["pose"][1])
+                                if dist_pose > DISTANCE_ADAPT:
+                                    dist_modifier = 1
+                                else:
+                                    dist_modifier = min(1,(dist_pose/DISTANCE_ADAPT)*2)
+
+                                vel_magnitude = math.sqrt(group["velocity"][0]**2+group["velocity"][1]**2)
+
+                                vel_factor = min(VEL_ADAPT_FACTOR*dist_modifier*vel_magnitude, ADAPT_LIMIT)
                                 
                                 if len(group['members']) > 1:
-                                    g_radius = group["g_radius"]  # Margin for safer results
-                                    pspace_radius = group["pspace_radius"]
+                                    g_radius = group["g_radius"]+vel_factor  # Margin for safer results
+                                    pspace_radius = group["pspace_radius"]+vel_factor
                                     ospace_radius = group["ospace_radius"]
                                 else:
-                                    g_radius = 1
-                                    pspace_radius = 1.4
+                                    g_radius = 1+vel_factor
+                                    pspace_radius = 1.4+vel_factor
                                     ospace_radius = 0.45
 
                                 #Calculate approaching poses
@@ -307,14 +313,24 @@ class ApproachingPose():
                                     if idx != -1 and (not goal_pose or euclidean_distance(goal_pose[0], goal_pose[1], approaching_poses[idx][0], approaching_poses[idx][1]) > 0.1):
                                         goal_pose = approaching_poses[idx][0:2]
                                         goal_pose = list(goal_pose)
-                                        dist_pose = euclidean_distance(self.pose[0],self.pose[1],goal_pose[0],goal_pose[1])
-                                        if dist_pose > DISTANCE_ADAPT:
-                                            dist_modifier = 1
-                                        else:
-                                            dist_modifier = dist_pose/DISTANCE_ADAPT
+                                        # dist_pose = euclidean_distance(self.pose[0],self.pose[1],goal_pose[0],goal_pose[1])
+                                        # if dist_pose > DISTANCE_ADAPT:
+                                        #     dist_modifier = 1
+                                        # else:
+                                        #     dist_modifier = dist_pose/DISTANCE_ADAPT
 
-                                        goal_pose[0] += VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][0]
-                                        goal_pose[1] += VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][1]
+                                        # x_adapt = VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][0]
+                                        # y_adapt = VEL_ADAPT_FACTOR*dist_modifier*group["velocity"][1]
+
+                                        # adapt_magnitude = np.linalg.norm([x_adapt,y_adapt])
+
+                                        # if adapt_magnitude < ADAPT_LIMIT:
+                                        #     goal_pose[0] += x_adapt
+                                        #     goal_pose[1] += y_adapt
+                                        # else:
+                                        #     goal_pose[0] = ADAPT_LIMIT*(x_adapt/adapt_magnitude)
+                                        #     goal_pose[1] = ADAPT_LIMIT*(y_adapt/adapt_magnitude)
+
                                         goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
                                         try:
                                             if self.moveresult:

@@ -292,7 +292,7 @@ class ApproachingPose():
                                 self.pubap.publish(ap_pub)
 
                                 # Verify if there are approaching zones
-                                if approaching_zones:
+                                if approaching_poses:
 
                                     #Attempt to approach the chosen zone.
                                     # if idx == -1:
