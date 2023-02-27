@@ -248,6 +248,11 @@ class ApproachingPose():
 
                             if dis[group_idx[0]] < 3 and ((not approach_number) or (len(group['members']) == approach_number)):    
 
+                                if self.moveresult:
+                                    if self.moveresult.status.status == 3:
+                                        rospy.loginfo("Goal execution done!")
+                                        break
+                                
                                 #Set a target to be used to track the chosen group to approach even if it changes position. Is used locally and in the people tracker
                                 self.target = (group["pose"][0],group["pose"][1])
 
@@ -270,7 +275,7 @@ class ApproachingPose():
                                 vel_factor = min(VEL_ADAPT_FACTOR*dist_modifier*vel_magnitude, ADAPT_LIMIT)
                                 
                                 if len(group['members']) > 1:
-                                    g_radius = group["g_radius"]+vel_factor  # Margin for safer results
+                                    g_radius = group["g_radius"]#+vel_factor  # Margin for safer results
                                     pspace_radius = group["pspace_radius"]+vel_factor
                                     ospace_radius = group["ospace_radius"]
                                 else:
@@ -305,11 +310,6 @@ class ApproachingPose():
                                 # Verify if there are approaching zones
                                 if approaching_poses:
 
-                                    #Attempt to approach the chosen zone.
-                                    # if idx == -1:
-                                    #     rospy.loginfo("Impossible to approach group due to insufficient space.")
-                                    #     break
-                                    # else:
                                     if idx != -1 and (not goal_pose or euclidean_distance(goal_pose[0], goal_pose[1], approaching_poses[idx][0], approaching_poses[idx][1]) > 0.1):
                                         goal_pose = approaching_poses[idx][0:2]
                                         goal_pose = list(goal_pose)
@@ -333,15 +333,14 @@ class ApproachingPose():
 
                                         goal_quaternion = convert.transformations.quaternion_from_euler(0,0,approaching_poses[idx][2])
                                         try:
-                                            if self.moveresult:
-                                                if self.moveresult.status.status == 3:
-                                                    rospy.loginfo("Goal execution done!")
-                                                    break
-                                                else:
-                                                    result = movebase_client(goal_pose, goal_quaternion)
-                                            else:
-                                                result = movebase_client(goal_pose, goal_quaternion)
-                                            testy = 0
+                                            # if self.moveresult:
+                                            #     if self.moveresult.status.status == 3:
+                                            #         rospy.loginfo("Goal execution done!")
+                                            #         break
+                                            #     else:
+                                            #         result = movebase_client(goal_pose, goal_quaternion)
+                                            # else:
+                                            result = movebase_client(goal_pose, goal_quaternion)
                                         except rospy.ROSInterruptException:
                                             rospy.loginfo("Navigation test finished.")
 

@@ -68,6 +68,6 @@
   <!--node pkg="adaptive_social_layers" type="people_publisher.py" name="people_publisher"/-->
 
   <!-- Approach group noder -->
-  <!--node pkg="approach_group" type="approach_group_revised.py" name="approach_group"/-->
+  <!--node pkg="approach_group" type="approach_group_revised_dynamic.py" name="approach_group"/-->
 
 </launch>

@@ -133,7 +133,7 @@ def approaching_area_filtering(approaching_area, costmap, group, FOVcheck, dista
     
     for x, y in zip(approaching_area[0], approaching_area[1]):
 
-        if distance_robot > 3:
+        if distance_robot > 100:
             cost = gaussianMax(group,[x,y])
         else:
             
