@@ -56,7 +56,7 @@
 
   <!-- Control modules -->
   <!--node pkg="approach_group" type="control_person_1.py" name="control_person_1"/-->
-  <!--node pkg="approach_group" type="control_person_2.py" name="control_person_2"/-->
+  <node pkg="approach_group" type="control_person_2.py" name="control_person_2"/>
   <node pkg="approach_group" type="control_person_3.py" name="control_person_3"/>
 
 

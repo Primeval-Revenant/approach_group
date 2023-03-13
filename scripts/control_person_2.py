@@ -16,9 +16,9 @@ class PersonController:
     def cmd_vel_cb(self, rosdata):
 
         #The person's reference frame is rotated...
-        self.state_msg.twist.linear.y = -1.5*rosdata.linear.x
-        self.state_msg.twist.linear.x = 1.5*rosdata.linear.y
-        self.state_msg.twist.angular.z = 1.5*rosdata.angular.z
+        self.state_msg.twist.linear.y = -rosdata.linear.x
+        self.state_msg.twist.linear.x = rosdata.linear.y
+        self.state_msg.twist.angular.z = rosdata.angular.z
 
     
     def joy_cb(self, joydata):

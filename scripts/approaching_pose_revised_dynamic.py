@@ -49,16 +49,59 @@ def euclidean_distance(x1, y1, x2, y2):
 
 # http://nic-gamedev.blogspot.com/2011/11/using-vector-mathematics-and-bit-of.html
 #Detect if a point is inside a person/group's field of view
-def isFOV(group, point):
+def isFOV(group, point, approaching_radius, group_radius):
 
-    for person in group['members']:
-        diff = np.subtract(point,[person['pose'][0],person['pose'][1]])
+    if len(group['members']) == 1:
+        fov = (90/2)/(approaching_radius/group_radius)
+    elif len(group['members']) == 2:
+        fov = (90/2)/(1.1*(approaching_radius/group_radius))
+    else:
+        fov = (90/2)
+
+    
+    if len(group['members']) != 2:
+        for person in group['members']:
+            diff = np.subtract(point,[person['pose'][0],person['pose'][1]])
+            diff /= np.linalg.norm(diff)
+
+            facing_direct = math.cos(person['pose'][2])*diff[0]+math.sin(person['pose'][2])*diff[1]
+
+            cosFOV = math.cos(((fov)*math.pi)/180)
+            
+            if (facing_direct < cosFOV):
+                return False
+            
+    else:
+        
+        person1 = group['members'][0]
+        person2 = group['members'][1]
+
+        angle1 = person1['pose'][2]
+        angle2 = person2['pose'][2]
+
+        if (angle1 < angle2):
+            while (abs(angle1 - angle2) > math.pi):
+                angle1 = angle1 + math.pi*2
+        else:
+            while (abs(angle1 - angle2) > math.pi):
+                angle1 = angle1 - math.pi*2
+        
+        avg = (angle1 + angle2) / 2
+
+        while (avg < 0):
+            avg  = avg + math.pi*2
+        while (avg >= math.pi*2):
+            avg = avg - math.pi*2
+
+        pose = [(person1['pose'][0]+person2['pose'][0])/2,(person1['pose'][1]+person2['pose'][1])/2, avg]
+
+        diff = np.subtract(point,[pose[0],pose[1]])
         diff /= np.linalg.norm(diff)
 
-        facing_direct = math.cos(person['pose'][2])*diff[0]+math.sin(person['pose'][2])*diff[1]
+        facing_direct = math.cos(pose[2])*diff[0]+math.sin(pose[2])*diff[1]
 
-        cosFOV = math.cos(((90/2)*math.pi)/180)
-        
+        cosFOV = math.cos(((fov)*math.pi)/180)
+            
         if (facing_direct < cosFOV):
             return False
 
@@ -121,7 +164,7 @@ def gaussianMax(group,point):
     return cost
 
 
-def approaching_area_filtering(approaching_area, costmap, group, FOVcheck, distance_robot):
+def approaching_area_filtering(approaching_area, costmap, group, FOVcheck, distance_robot, approaching_radius, group_radius):
     """ Filters the approaching area by checking the points inside personal or group space. Also checks for FOV if the bool is true"""
 
     approaching_filter = []
@@ -133,7 +176,7 @@ def approaching_area_filtering(approaching_area, costmap, group, FOVcheck, dista
     
     for x, y in zip(approaching_area[0], approaching_area[1]):
 
-        if distance_robot > 100:
+        if distance_robot > 3:
             cost = gaussianMax(group,[x,y])
         else:
             
@@ -147,7 +190,7 @@ def approaching_area_filtering(approaching_area, costmap, group, FOVcheck, dista
             cost = costmap.data[index]
             cost = costconvert[cost]
 
-        if (cost <= THRESHOLD and cost != 255) and (not FOVcheck or (FOVcheck and isFOV(group,[x,y]))): #
+        if (cost <= THRESHOLD and cost != 255) and (not FOVcheck or (FOVcheck and isFOV(group,[x,y], approaching_radius, group_radius))): #
 
             approaching_filter.append((x, y))
             aux_list.append((x, y))
@@ -170,7 +213,7 @@ def approaching_area_filtering(approaching_area, costmap, group, FOVcheck, dista
     return approaching_filter, approaching_zones
 
 #Calculates the approaching zone
-def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos, costmap, group, pose, plotting):
+def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos, costmap, group, pose, velocity, plotting):
     """ """
 
     approaching_radius = group_radius
@@ -201,7 +244,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
         approaching_area = plot_ellipse(
             semimaj=approaching_radius, semimin=approaching_radius, x_cent=group_pos[0], y_cent=group_pos[1], data_out=True)
         approaching_filter, approaching_zones = approaching_area_filtering(
-            approaching_area, costmap, group, FOVcheck, distance_robot)
+            approaching_area, costmap, group, FOVcheck, distance_robot, approaching_radius, group_radius)
 
         if approaching_filter:
             center_x, center_y, orientation, approach_space = zones_center(
@@ -210,24 +253,24 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
             for l, _ in enumerate(center_x):
                 approaching_poses.append((center_x[l], center_y[l], orientation[l], approach_space[l]))
 
-            if plotting:
-                fig = plt.figure()
-                ax = fig.add_subplot(1, 1, 1)
-                plot_kwargs = {'color': 'g', 'linestyle': '-', 'linewidth': 0.8}
-                for person in group["members"]:
-                    plot_person(person["pose"][0], person["pose"][1], person["pose"][2], ax, plot_kwargs)
+            # if plotting:
+            #     fig = plt.figure()
+            #     ax = fig.add_subplot(1, 1, 1)
+            #     plot_kwargs = {'color': 'g', 'linestyle': '-', 'linewidth': 0.8}
+            #     for person in group["members"]:
+            #         plot_person(person["pose"][0], person["pose"][1], person["pose"][2], ax, plot_kwargs)
 
-                _ = plot_group(group["pose"], group_radius, pspace_radius, ospace_radius, ax)
+            #     _ = plot_group(group["pose"], group_radius, pspace_radius, ospace_radius, ax)
 
-                for i, angle in enumerate(orientation):
-                    draw_arrow(center_x[i], center_y[i], angle, ax)
-                x_approach = [j[0] for j in approaching_filter]
-                y_approach = [k[1] for k in approaching_filter]
-                ax.plot(x_approach, y_approach, 'c.', markersize=5)
-                ax.plot(center_x, center_y, 'r.', markersize=5)
-                ax.set_aspect(aspect=1)
-                #fig.tight_layout()
-                plt.show()
+            #     for i, angle in enumerate(orientation):
+            #         draw_arrow(center_x[i], center_y[i], angle, ax)
+            #     x_approach = [j[0] for j in approaching_filter]
+            #     y_approach = [k[1] for k in approaching_filter]
+            #     ax.plot(x_approach, y_approach, 'c.', markersize=5)
+            #     ax.plot(center_x, center_y, 'r.', markersize=5)
+            #     ax.set_aspect(aspect=1)
+            #     #fig.tight_layout()
+            #     plt.show()
 
             indexes = np.argsort(approach_space)
             indexes = np.flip(indexes)
@@ -242,6 +285,26 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
                 else:
                     break
             
+            if idx != -1:
+                if plotting:
+                    fig = plt.figure()
+                    ax = fig.add_subplot(1, 1, 1)
+                    plot_kwargs = {'color': 'g', 'linestyle': '-', 'linewidth': 0.8}
+                    for person in group["members"]:
+                        plot_person(person["pose"][0], person["pose"][1], person["pose"][2], ax, plot_kwargs)
+
+                    _ = plot_group(group["pose"], group_radius, pspace_radius, ospace_radius, ax)
+
+                    for i, angle in enumerate(orientation):
+                        draw_arrow(center_x[i], center_y[i], angle, ax)
+                    x_approach = [j[0] for j in approaching_filter]
+                    y_approach = [k[1] for k in approaching_filter]
+                    ax.plot(x_approach, y_approach, 'c.', markersize=5)
+                    ax.plot(center_x, center_y, 'r.', markersize=5)
+                    ax.set_aspect(aspect=1)
+                    #fig.tight_layout()
+                    plt.show()
+            
             # if len(group["members"]) != 1:
             #     if approach_counter > approach_max:
             #         approach_max = approach_counter
@@ -252,7 +315,7 @@ def approaching_heuristic(group_radius, pspace_radius, ospace_radius, group_pos,
             #     idx = idx_aux
             # approach_counter = 0
 
-        approaching_radius += R_STEP
+        approaching_radius += max(R_STEP,R_STEP*velocity*10)
 
         # if approaching_radius >= pspace_radius and idx_aux2 != -1:
         #     idx = idx_aux2

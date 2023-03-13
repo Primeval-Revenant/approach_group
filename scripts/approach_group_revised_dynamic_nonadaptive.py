@@ -270,16 +270,16 @@ class ApproachingPose():
                                 vel_factor = min(VEL_ADAPT_FACTOR*dist_modifier*vel_magnitude, ADAPT_LIMIT)
                                 
                                 if len(group['members']) > 1:
-                                    g_radius = group["g_radius"]+vel_factor  # Margin for safer results
+                                    g_radius = group["g_radius"]#+vel_factor  # Margin for safer results
                                     pspace_radius = group["pspace_radius"]+vel_factor
                                     ospace_radius = group["ospace_radius"]
                                 else:
-                                    g_radius = 1+vel_factor
+                                    g_radius = 1#+vel_factor
                                     pspace_radius = 1.4+vel_factor
                                     ospace_radius = 0.45
 
                                 #Calculate approaching poses
-                                approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
+                                approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, vel_magnitude, self.plotting)
 
                                 #publish approaching poses
                                 ap_pub = PoseArray()

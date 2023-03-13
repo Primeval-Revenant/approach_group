@@ -24,8 +24,8 @@ from plot_approach import plot_group, plot_person, draw_arrow
 HUMAN_Y = 0.45
 HUMAN_X = 0.20
 DISTANCE_ADAPT = 6
-ADAPT_LIMIT = 1
-VEL_ADAPT_FACTOR = 7
+ADAPT_LIMIT = 1.2
+VEL_ADAPT_FACTOR = 1.5
 
 
 def rotate(px, py, angle):
@@ -279,12 +279,12 @@ class ApproachingPose():
                                     pspace_radius = group["pspace_radius"]+vel_factor
                                     ospace_radius = group["ospace_radius"]
                                 else:
-                                    g_radius = 1+vel_factor
+                                    g_radius = 1#+vel_factor
                                     pspace_radius = 1.4+vel_factor
                                     ospace_radius = 0.45
 
                                 #Calculate approaching poses
-                                approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, self.plotting)
+                                approaching_filter, approaching_zones, approaching_poses, idx = approaching_heuristic(g_radius, pspace_radius, ospace_radius, group["pose"], self.costmap, group, self.pose, vel_magnitude, self.plotting)
 
                                 #publish approaching poses
                                 ap_pub = PoseArray()
@@ -310,7 +310,7 @@ class ApproachingPose():
                                 # Verify if there are approaching zones
                                 if approaching_poses:
 
-                                    if idx != -1 and (not goal_pose or euclidean_distance(goal_pose[0], goal_pose[1], approaching_poses[idx][0], approaching_poses[idx][1]) > 0.1):
+                                    if idx != -1 and (not goal_pose or euclidean_distance(goal_pose[0], goal_pose[1], approaching_poses[idx][0], approaching_poses[idx][1]) > 0):
                                         goal_pose = approaching_poses[idx][0:2]
                                         goal_pose = list(goal_pose)
                                         # dist_pose = euclidean_distance(self.pose[0],self.pose[1],goal_pose[0],goal_pose[1])
