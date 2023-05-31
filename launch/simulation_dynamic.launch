@@ -49,15 +49,16 @@
     <arg name="rviz" value="$(arg rviz)"/>
     <arg name="gui" value="$(arg gazebo_gui)"/>
   </include>
+  
   <!-- Fake face detector -->
   <node pkg="approach_group" type="fake_people.py" name="fake_face_detector"/>
 
   <node type="rviz" name="rviz_view" pkg="rviz" args="-d $(find approach_group)/rviz/config_dynamic.rviz" />
 
-  <!-- Control modules -->
+  <!-- Control modules. Enable as necessary depending on person models used -->
   <!--node pkg="approach_group" type="control_person_1.py" name="control_person_1"/-->
-  <node pkg="approach_group" type="control_person_2.py" name="control_person_2"/>
-  <node pkg="approach_group" type="control_person_3.py" name="control_person_3"/>
+  <!--node pkg="approach_group" type="control_person_2.py" name="control_person_2"/-->
+  <!--node pkg="approach_group" type="control_person_3.py" name="control_person_3"/-->
 
 
   <!-- Fake speech server -->
@@ -65,9 +66,10 @@
     name="gcloud_tts" output="screen">
   </node>
 
-  <!--node pkg="adaptive_social_layers" type="people_publisher.py" name="people_publisher"/-->
+  <!-- People publisher node -->
+  <node pkg="adaptive_social_layers" type="people_publisher.py" name="people_publisher"/>
 
-  <!-- Approach group noder -->
-  <!--node pkg="approach_group" type="approach_group_revised_dynamic.py" name="approach_group"/-->
+  <!-- Approach group node -->
+  <node pkg="approach_group" type="approach_group.py" name="approach_group"/>
 
 </launch>
